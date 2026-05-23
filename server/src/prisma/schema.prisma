@@ -1,0 +1,379 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EventType {
+  birthday
+  anniversary
+  other
+
+  @@map("event_type_enum")
+}
+
+enum DeliveryStatus {
+  pending
+  success
+  failed
+
+  @@map("delivery_status_enum")
+}
+
+enum ApprovalStatus {
+  pending
+  approved
+  rejected
+
+  @@map("approval_status_enum")
+}
+
+enum EventStatus {
+  draft
+  published
+  completed
+
+  @@map("event_status_enum")
+}
+
+enum ParticipationStatus {
+  registered
+  participated
+  absent
+
+  @@map("participation_status_enum")
+}
+
+enum QueryStatus {
+  open
+  resolved
+
+  @@map("query_status_enum")
+}
+
+enum ContentType {
+  event
+  survey
+  article
+  template
+
+  @@map("content_type_enum")
+}
+
+enum NotificationStatus {
+  pending
+  sent
+  failed
+
+  @@map("notification_status_enum")
+}
+
+enum NotificationChannel {
+  email
+  chat
+  intranet
+
+  @@map("notification_channel_enum")
+}
+
+enum NotificationType {
+  recognition
+  event
+  survey
+  query_response
+  system
+
+  @@map("notification_type_enum")
+}
+
+enum UserRole {
+  EMPLOYEE
+  HR_COORDINATOR
+  HR_OPERATIONS_MANAGER
+  COMPLIANCE_REVIEWER
+  SUPER_ADMIN
+
+  @@map("user_role_enum")
+}
+
+model Employee {
+  employeeId   Int      @id @default(autoincrement()) @map("employee_id")
+  name         String   @db.VarChar(100)
+  email        String   @unique @db.VarChar(150)
+  dateOfBirth  DateTime @map("date_of_birth") @db.Date
+  joiningDate  DateTime @map("joining_date") @db.Date
+  department   String?  @db.VarChar(100)
+  role         String?  @db.VarChar(100)
+  location     String?  @db.VarChar(100)
+  language     String?  @db.VarChar(50)
+  timeZone     String?  @map("time_zone") @db.VarChar(50)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  authAccount        AuthAccount?
+  recognitionEvents   RecognitionEvent[]
+  engagementEvents    EngagementEvent[] @relation("CreatedEngagementEvents")
+  eventParticipants   EventParticipant[]
+  surveysCreated      Survey[] @relation("CreatedSurveys")
+  surveyResponses     SurveyResponse[]
+  knowledgeArticles   KnowledgeBaseArticle[] @relation("WrittenArticles")
+  queryLogs           QueryLog[]
+  approvalsReviewed   Approval[] @relation("ReviewedApprovals")
+  auditLogs           AuditLog[]
+  notifications       Notification[]
+
+  @@map("employees")
+}
+
+model AuthAccount {
+  id           Int       @id @default(autoincrement())
+  employeeId   Int?      @unique @map("employee_id")
+  email        String    @unique @db.VarChar(150)
+  passwordHash String    @map("password_hash")
+  role         UserRole  @default(EMPLOYEE)
+  isActive     Boolean?  @default(true) @map("is_active")
+  lastLoginAt  DateTime? @map("last_login_at")
+  createdAt    DateTime? @default(now()) @map("created_at")
+
+  employee Employee? @relation(fields: [employeeId], references: [employeeId], onDelete: Cascade)
+
+  @@map("auth_accounts")
+}
+
+model RecognitionTemplate {
+  templateId       Int              @id @default(autoincrement()) @map("template_id")
+  templateName     String?          @map("template_name") @db.VarChar(100)
+  eventType        EventType?       @map("event_type")
+  content          String?
+  version          Int?
+  isActive         Boolean?         @default(true) @map("is_active")
+  createdBy        Int?             @map("created_by")
+  approvedStatus   ApprovalStatus?  @default(pending) @map("approved_status")
+  createdAt        DateTime         @default(now()) @map("created_at")
+
+  recognitionEvents RecognitionEvent[]
+
+  @@map("recognition_templates")
+}
+
+model RecognitionEvent {
+  eventId         Int             @id @default(autoincrement()) @map("event_id")
+  employeeId      Int?            @map("employee_id")
+  eventType       EventType?      @map("event_type")
+  triggerDate     DateTime?       @map("trigger_date") @db.Date
+  templateId      Int?            @map("template_id")
+  deliveryStatus  DeliveryStatus? @default(pending) @map("delivery_status")
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  employee Employee? @relation(fields: [employeeId], references: [employeeId])
+  template RecognitionTemplate? @relation(fields: [templateId], references: [templateId])
+  deliveryLogs RecognitionDeliveryLog[]
+
+  @@map("recognition_events")
+}
+
+model RecognitionDeliveryLog {
+  id             Int             @id @default(autoincrement())
+  eventId        Int?            @map("event_id")
+  channel        NotificationChannel?
+  deliveryStatus DeliveryStatus? @map("delivery_status")
+  retryCount     Int?            @default(0) @map("retry_count")
+  deliveredAt    DateTime?       @map("delivered_at")
+
+  event RecognitionEvent? @relation(fields: [eventId], references: [eventId], onDelete: Cascade)
+
+  @@map("recognition_delivery_logs")
+}
+
+model EngagementEvent {
+  eventId            Int             @id @default(autoincrement()) @map("event_id")
+  eventName          String?         @map("event_name") @db.VarChar(150)
+  eventType          String?         @map("event_type") @db.VarChar(50)
+  description        String?
+  targetAudience     String?         @map("target_audience") @db.VarChar(100)
+  registrationStart  DateTime?       @map("registration_start") @db.Date
+  registrationEnd    DateTime?       @map("registration_end") @db.Date
+  eventDate          DateTime?       @map("event_date") @db.Date
+  publishedDate      DateTime?       @map("published_date") @db.Date
+  status             EventStatus?    @default(draft)
+  createdBy          Int?            @map("created_by")
+  approvedStatus     ApprovalStatus? @default(pending) @map("approved_status")
+
+  creator Employee? @relation("CreatedEngagementEvents", fields: [createdBy], references: [employeeId])
+  participants EventParticipant[]
+
+  @@map("engagement_events")
+}
+
+model EventParticipant {
+  id                   Int                 @id @default(autoincrement())
+  eventId              Int?                @map("event_id")
+  employeeId           Int?                @map("employee_id")
+  registrationStatus   Boolean?            @default(false) @map("registration_status")
+  participationStatus  ParticipationStatus? @map("participation_status")
+  feedbackRating       Float?              @map("feedback_rating")
+  feedbackText         String?             @map("feedback_text")
+  createdAt            DateTime            @default(now()) @map("created_at")
+
+  event    EngagementEvent? @relation(fields: [eventId], references: [eventId], onDelete: Cascade)
+  employee Employee? @relation(fields: [employeeId], references: [employeeId])
+
+  @@unique([eventId, employeeId])
+  @@map("event_participants")
+}
+
+model Survey {
+  surveyId         Int             @id @default(autoincrement()) @map("survey_id")
+  title            String?         @db.VarChar(200)
+  targetAudience   String?         @map("target_audience") @db.VarChar(100)
+  openDate         DateTime?       @map("open_date") @db.Date
+  closeDate        DateTime?       @map("close_date") @db.Date
+  isAnonymous      Boolean?        @default(true) @map("is_anonymous")
+  createdBy        Int?            @map("created_by")
+  approvedStatus   ApprovalStatus? @default(pending) @map("approved_status")
+  createdAt        DateTime        @default(now()) @map("created_at")
+
+  creator Employee? @relation("CreatedSurveys", fields: [createdBy], references: [employeeId])
+  questions SurveyQuestion[]
+  responses SurveyResponse[]
+
+  @@map("surveys")
+}
+
+model SurveyQuestion {
+  questionId   Int      @id @default(autoincrement()) @map("question_id")
+  surveyId     Int?     @map("survey_id")
+  questionText String?  @map("question_text")
+  questionType String?  @map("question_type") @db.VarChar(50)
+  options      Json?
+
+  survey Survey? @relation(fields: [surveyId], references: [surveyId], onDelete: Cascade)
+  answers SurveyAnswer[]
+
+  @@map("survey_questions")
+}
+
+model SurveyResponse {
+  responseId   Int      @id @default(autoincrement()) @map("response_id")
+  surveyId     Int?     @map("survey_id")
+  employeeId   Int?     @map("employee_id")
+  submittedAt  DateTime @default(now()) @map("submitted_at")
+
+  survey   Survey?   @relation(fields: [surveyId], references: [surveyId], onDelete: Cascade)
+  employee Employee? @relation(fields: [employeeId], references: [employeeId])
+  answers  SurveyAnswer[]
+
+  @@map("survey_responses")
+}
+
+model SurveyAnswer {
+  id          Int     @id @default(autoincrement())
+  responseId  Int?    @map("response_id")
+  questionId  Int?    @map("question_id")
+  answerText  String? @map("answer_text")
+
+  response SurveyResponse? @relation(fields: [responseId], references: [responseId], onDelete: Cascade)
+  question SurveyQuestion? @relation(fields: [questionId], references: [questionId])
+
+  @@map("survey_answers")
+}
+
+model KnowledgeBaseArticle {
+  articleId         Int      @id @default(autoincrement()) @map("article_id")
+  title             String?  @db.VarChar(200)
+  content           String?
+  category          String?  @db.VarChar(100)
+  roleTag           String?  @map("role_tag") @db.VarChar(100)
+  author            Int?
+  version           Int?
+  status            String?  @db.VarChar(50)
+  lastReviewedDate  DateTime? @map("last_reviewed_date") @db.Date
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  writer Employee? @relation("WrittenArticles", fields: [author], references: [employeeId])
+
+  queryLogs QueryLog[]
+
+  @@map("knowledge_base_articles")
+}
+
+model QueryLog {
+  queryId           Int      @id @default(autoincrement()) @map("query_id")
+  employeeId        Int?     @map("employee_id")
+  queryText         String?  @map("query_text")
+  matchedArticleId  Int?     @map("matched_article_id")
+  confidenceScore   Float?   @map("confidence_score")
+  responseDelivered String?  @map("response_delivered")
+  escalationFlag    Boolean? @default(false) @map("escalation_flag")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  employee Employee? @relation(fields: [employeeId], references: [employeeId])
+  matchedArticle KnowledgeBaseArticle? @relation(fields: [matchedArticleId], references: [articleId])
+  escalation QueryEscalation?
+
+  @@map("query_logs")
+}
+
+model QueryEscalation {
+  id            Int         @id @default(autoincrement())
+  queryId       Int?        @map("query_id") @unique
+  assignedTo    Int?        @map("assigned_to")
+  status        QueryStatus? @default(open)
+  resolutionText String?     @map("resolution_text")
+  resolvedAt    DateTime?   @map("resolved_at")
+
+  query QueryLog? @relation(fields: [queryId], references: [queryId], onDelete: Cascade)
+
+  @@map("query_escalations")
+}
+
+model Approval {
+  approvalId   Int            @id @default(autoincrement()) @map("approval_id")
+  contentType  ContentType?   @map("content_type")
+  contentId    Int?           @map("content_id")
+  status       ApprovalStatus? @default(pending)
+  reviewerId   Int?           @map("reviewer_id")
+  comments     String?
+  createdAt    DateTime       @default(now()) @map("created_at")
+
+  reviewer Employee? @relation("ReviewedApprovals", fields: [reviewerId], references: [employeeId])
+
+  @@map("approvals")
+}
+
+model AuditLog {
+  logId          Int      @id @default(autoincrement()) @map("log_id")
+  eventType      String?  @map("event_type") @db.VarChar(100)
+  employeeId     Int?     @map("employee_id")
+  contentId      Int?     @map("content_id")
+  channel        String?  @db.VarChar(50)
+  outcome        String?  @db.VarChar(100)
+  reviewerDecision String? @map("reviewer_decision") @db.VarChar(50)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  employee Employee? @relation(fields: [employeeId], references: [employeeId])
+
+  @@map("audit_logs")
+}
+
+model Notification {
+  notificationId    Int                 @id @default(autoincrement()) @map("notification_id")
+  employeeId        Int?                @map("employee_id")
+  title             String?             @db.VarChar(200)
+  message           String?
+  notificationType  NotificationType?   @map("notification_type")
+  relatedId         Int?                @map("related_id")
+  relatedType       String?             @map("related_type") @db.VarChar(50)
+  channel           NotificationChannel?
+  status            NotificationStatus? @default(pending)
+  retryCount        Int?                @default(0) @map("retry_count")
+  sentAt            DateTime?           @map("sent_at")
+  readAt            DateTime?           @map("read_at")
+  createdAt         DateTime            @default(now()) @map("created_at")
+
+  employee Employee? @relation(fields: [employeeId], references: [employeeId])
+
+  @@map("notifications")
+}
