@@ -1,20 +1,16 @@
-import type { UserRole } from "../../common/constants/userRoles.js";
-
+// Minimal auth-related types for login/signup flows
 export type LoginInput = {
   email: string;
   password: string;
 };
 
-export type AuthUser = {
-  id: number;
-  employeeId: number;
-  email: string;
-  role: UserRole;
+export type EmployeeLoginInput = LoginInput & {
+  role?: string; // optional role string from frontend
 };
 
-export type CreateAccountInput = {
-  employeeId: number;
+export type SuperAdminSignupInput = {
+  name: string;
   email: string;
   password: string;
-  role?: UserRole;
+  companyName?: string;
 };

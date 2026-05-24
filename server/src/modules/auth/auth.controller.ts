@@ -1,20 +1,21 @@
 import type { Request, Response } from "express";
-import { ApiResponse } from "../../common/utils/ApiResponse.js";
 import { authService } from "./auth.service.js";
+import { sendSuccess, sendCreated } from "../../common/utils/responseHelpers.js";
+import { MESSAGES } from "../../common/constants/messages.js";
 
 export const authController = {
-  async login(req: Request, res: Response) {
-    const result = await authService.login(req.body);
-    return res.status(200).json(new ApiResponse("Login successful", result));
+  async employeeLogin(req: Request, res: Response) {
+    const result = await authService.employeeLogin(req.body);
+    return sendSuccess(res, result, MESSAGES.LOGIN_SUCCESS, 200);
   },
 
-  async me(req: Request, res: Response) {
-    const account = await authService.me(req.user!.employeeId);
-    return res.status(200).json(new ApiResponse("Profile fetched successfully", { account }));
+  async superAdminLogin(req: Request, res: Response) {
+    const result = await authService.superAdminLogin(req.body);
+    return sendSuccess(res, result, MESSAGES.LOGIN_SUCCESS, 200);
   },
 
-  async createAccount(req: Request, res: Response) {
-    const account = await authService.createAccount(req.body);
-    return res.status(201).json(new ApiResponse("Account created", account));
+  async superAdminSignup(req: Request, res: Response) {
+    const result = await authService.superAdminSignup(req.body);
+    return sendCreated(res, result, MESSAGES.SIGNUP_SUCCESS);
   },
 };

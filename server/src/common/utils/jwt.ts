@@ -3,7 +3,7 @@ import { env } from "../../config/env.js";
 
 export type JwtPayload = {
   id: number;
-  employeeId: number;
+  employeeId: number | null;
   email: string;
   role: string;
 };

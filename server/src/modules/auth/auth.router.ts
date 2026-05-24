@@ -4,18 +4,12 @@ import { authorize } from "../../common/middleware/authorize.middleware.js";
 import { validate } from "../../common/middleware/validate.middleware.js";
 import { catchAsync } from "../../common/utils/catchAsync.js";
 import { authController } from "./auth.controller.js";
+import { employeeLoginSchema } from "./auth.validation.js";
 import { loginSchema } from "./auth.validation.js";
-import { createAccountSchema } from "./auth.validation.js";
-import { UserRole } from "../../common/constants/userRoles.js";
+import { superAdminSignupSchema } from "./auth.validation.js";
 
 export const authRouter = Router();
 
-authRouter.post("/login", validate(loginSchema), catchAsync(authController.login));
-authRouter.get("/me", authenticate, catchAsync(authController.me));
-authRouter.post(
-	"/create-account",
-	authenticate,
-	authorize([UserRole.SUPER_ADMIN]),
-	validate(createAccountSchema),
-	catchAsync(authController.createAccount),
-);
+authRouter.post("/super_admin/signup", validate(superAdminSignupSchema), catchAsync(authController.superAdminSignup));
+authRouter.post("/super_admin/login", validate(loginSchema), catchAsync(authController.superAdminLogin));
+authRouter.post("/employee/login", validate(employeeLoginSchema), catchAsync(authController.employeeLogin));
