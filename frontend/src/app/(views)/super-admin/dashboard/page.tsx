@@ -1,9 +1,10 @@
+import CreateAccount from '@/modules/super-admin/views/createAccount'
 import React from 'react'
 
 const page = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <h1 className="text-2xl font-semibold">This is Super Admin Dashboard</h1>
+    <div>
+      <CreateAccount/>
     </div>
   )
 }
