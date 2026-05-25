@@ -1,1 +1,1 @@
-export {};
+export { eventRouter } from "./event.route.js";

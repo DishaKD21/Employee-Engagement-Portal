@@ -1,1 +1,1 @@
-export {};
+export { approvalRouter } from "./approval.route.js";
