@@ -15,6 +15,11 @@ export default function Page() {
             <p className="mt-2 text-sm text-slate-600">Create, edit, and submit event workflows for review.</p>
           </Link>
 
+          <Link href="/hr/recognition-templates" className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-slate-300 hover:shadow-md">
+            <h2 className="text-xl font-semibold text-slate-900">Recognition Templates</h2>
+            <p className="mt-2 text-sm text-slate-600">Create birthday and anniversary templates for approval.</p>
+          </Link>
+
           <Link href="/hr/surveys" className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-slate-300 hover:shadow-md">
             <h2 className="text-xl font-semibold text-slate-900">Manage Surveys</h2>
             <p className="mt-2 text-sm text-slate-600">Create surveys, build questions, and submit them for approval.</p>

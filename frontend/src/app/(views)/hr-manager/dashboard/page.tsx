@@ -15,6 +15,11 @@ export default function Page() {
             <p className="mt-2 text-sm text-slate-600">Approve or reject submitted event workflows.</p>
           </Link>
 
+          <Link href="/hr-manager/template-approvals" className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-slate-300 hover:shadow-md">
+            <h2 className="text-xl font-semibold text-slate-900">Template Approvals</h2>
+            <p className="mt-2 text-sm text-slate-600">Review automated recognition templates before they go live.</p>
+          </Link>
+
           <Link href="/hr-manager/survey-approvals" className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-slate-300 hover:shadow-md">
             <h2 className="text-xl font-semibold text-slate-900">Survey Approvals</h2>
             <p className="mt-2 text-sm text-slate-600">Approve or reject submitted survey workflows.</p>

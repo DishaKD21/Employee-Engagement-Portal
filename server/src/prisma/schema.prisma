@@ -169,16 +169,16 @@ model RecognitionEvent {
 
   employee Employee? @relation(fields: [employeeId], references: [employeeId])
   template RecognitionTemplate? @relation(fields: [templateId], references: [templateId])
-  deliveryLogs RecognitionDeliveryLog[]
+  deliveryLogs NotificationDelivery[]
 
   @@map("recognition_events")
 }
 
-model RecognitionDeliveryLog {
+model NotificationDelivery {
   id             Int             @id @default(autoincrement())
   eventId        Int?            @map("event_id")
   channel        NotificationChannel?
-  deliveryStatus DeliveryStatus? @map("delivery_status")
+  deliveryStatus DeliveryStatus?  @map("delivery_status")
   retryCount     Int?            @default(0) @map("retry_count")
   deliveredAt    DateTime?       @map("delivered_at")
 
