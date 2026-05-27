@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "../../config/db.js";
 import { ApiError } from "../../common/utils/ApiError.js";
 import { signToken } from "../../common/utils/jwt.js";
+import { auditLogger } from "../../common/services/auditLogger.service.js";
 import type { LoginInput } from "./auth.types.js";
 import type { SuperAdminSignupInput } from "./auth.types.js";
 import type { EmployeeLoginInput } from "./auth.types.js";
@@ -48,6 +49,13 @@ export const authService = {
 
     await prisma.authAccount.update({ where: { id: account.id }, data: { lastLoginAt: new Date() } });
 
+    await auditLogger.logAuditEvent({
+      eventType: "Login Success",
+      employeeId: account.employeeId ?? undefined,
+      channel: "AUTH",
+      outcome: "Success",
+    });
+
     const token = signToken({ id: account.id, employeeId: account.employeeId, email: account.email, role: account.role });
 
     return { token, user: { id: account.id, employeeId: account.employeeId, email: account.email, role: responseRoleMap[account.role], employee: account.employee }, role: responseRoleMap[account.role] };
@@ -65,6 +73,13 @@ export const authService = {
     if (account.role !== UserRole.SUPER_ADMIN) throw new ApiError(401, "Invalid credentials");
 
     await prisma.authAccount.update({ where: { id: account.id }, data: { lastLoginAt: new Date() } });
+
+    await auditLogger.logAuditEvent({
+      eventType: "Login Success",
+      employeeId: account.employeeId ?? undefined,
+      channel: "AUTH",
+      outcome: "Success",
+    });
 
     const token = signToken({ id: account.id, employeeId: account.employeeId, email: account.email, role: account.role });
 

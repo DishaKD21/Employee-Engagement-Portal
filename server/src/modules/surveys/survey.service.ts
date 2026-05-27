@@ -1,6 +1,7 @@
 import { ApprovalStatus, ContentType } from "@prisma/client";
 import { prisma } from "../../config/db.js";
 import { ApiError } from "../../common/utils/ApiError.js";
+import { auditLogger } from "../../common/services/auditLogger.service.js";
 import type { CreateSurveyInput, RejectSurveyInput, SubmitSurveyInput, UpdateSurveyInput } from "./survey.types.js";
 
 function ensureValidId(id: number) {
@@ -146,6 +147,14 @@ export const surveyService = {
       });
 
       return { survey, approval };
+    });
+
+    await auditLogger.logAuditEvent({
+      eventType: "Survey Created",
+      employeeId: creatorEmployeeId,
+      contentId: created.survey.surveyId,
+      channel: "SURVEY",
+      outcome: "Created",
     });
 
     return {
@@ -359,6 +368,15 @@ export const surveyService = {
       return { updatedApproval, updatedSurvey };
     });
 
+    await auditLogger.logAuditEvent({
+      eventType: "Survey Approved",
+      employeeId: reviewerEmployeeId,
+      contentId: survey.surveyId,
+      channel: "SURVEY",
+      outcome: "Approved",
+      reviewerDecision: "Approved",
+    });
+
     return {
       approvalId: result.updatedApproval.approvalId,
       status: result.updatedApproval.status,
@@ -411,6 +429,15 @@ export const surveyService = {
       });
 
       return { updatedApproval, updatedSurvey };
+    });
+
+    await auditLogger.logAuditEvent({
+      eventType: "Survey Rejected",
+      employeeId: reviewerEmployeeId,
+      contentId: survey.surveyId,
+      channel: "SURVEY",
+      outcome: "Rejected",
+      reviewerDecision: "Rejected",
     });
 
     return {

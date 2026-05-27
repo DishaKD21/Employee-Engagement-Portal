@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authRouter } from "../modules/auth/auth.router.js";
 import { approvalRouter } from "../modules/approval/approval.route.js";
+import { auditRouter } from "../modules/audit/audit.router.js";
 import { eventRouter } from "../modules/event/event.route.js";
 import { notificationRouter } from "../modules/notification/notification.router.js";
 import { recognitionRouter } from "../modules/recognition/recognition.route.js";
@@ -12,8 +13,9 @@ export const routes = Router();
 routes.use(authRouter);
 routes.use("/events", eventRouter);
 routes.use("/approvals", approvalRouter);
+routes.use("/audit", auditRouter);
 routes.use("/recognition", recognitionRouter);
 routes.use("/notifications", notificationRouter);
 routes.use("/surveys", surveyRouter);
 routes.use("/survey-approvals", surveyApprovalRouter);
-routes.use("/super-admin", superAdminRouter);
+routes.use("/super-admin", superAdminRouter); 

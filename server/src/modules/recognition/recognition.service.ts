@@ -2,6 +2,7 @@ import { ApprovalStatus, ContentType, DeliveryStatus, EventType, NotificationCha
 import { prisma } from "../../config/db.js";
 import { env } from "../../config/env.js";
 import { ApiError } from "../../common/utils/ApiError.js";
+import { auditLogger } from "../../common/services/auditLogger.service.js";
 import { logger } from "../../config/logger.js";
 import { personalizeTemplate } from "../../common/utils/templatePersonalizer.js";
 import { sendMail } from "../../utils/sendMail.js";
@@ -295,6 +296,14 @@ async function deliverRecognitionMessage(params: {
         deliveredAt: new Date(),
       });
 
+      await auditLogger.logAuditEvent({
+        eventType: "Recognition Delivered",
+        employeeId: params.employee.employeeId,
+        contentId: params.eventId,
+        channel: "EMAIL",
+        outcome: "Delivered",
+      });
+
       return { notification: await prisma.notification.findUnique({ where: { notificationId: notification.notificationId } }), delivery };
     } catch (error) {
       lastError = error;
@@ -331,6 +340,14 @@ async function deliverRecognitionMessage(params: {
         deliveryStatus: DeliveryStatus.failed,
         retryCount: attempt,
         deliveredAt: new Date(),
+      });
+
+      await auditLogger.logAuditEvent({
+        eventType: "Recognition Delivery Failed",
+        employeeId: params.employee.employeeId,
+        contentId: params.eventId,
+        channel: "EMAIL",
+        outcome: "Failed",
       });
 
       return { notification: await prisma.notification.findUnique({ where: { notificationId: notification.notificationId } }), delivery, lastError };
@@ -652,6 +669,15 @@ export const recognitionService = {
       return { updatedApproval, updatedTemplate };
     });
 
+    await auditLogger.logAuditEvent({
+      eventType: "Recognition Approved",
+      employeeId: reviewerEmployeeId,
+      contentId: template.templateId,
+      channel: "RECOGNITION",
+      outcome: "Approved",
+      reviewerDecision: "Approved",
+    });
+
     return {
       approvalId: updated.updatedApproval.approvalId,
       status: updated.updatedApproval.status,
@@ -695,6 +721,15 @@ export const recognitionService = {
       });
 
       return { updatedApproval, updatedTemplate };
+    });
+
+    await auditLogger.logAuditEvent({
+      eventType: "Recognition Rejected",
+      employeeId: reviewerEmployeeId,
+      contentId: template.templateId,
+      channel: "RECOGNITION",
+      outcome: "Rejected",
+      reviewerDecision: "Rejected",
     });
 
     return {

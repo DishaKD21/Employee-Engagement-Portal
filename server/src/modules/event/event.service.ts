@@ -1,6 +1,7 @@
 import { ApprovalStatus, ContentType, EventStatus, Prisma } from "@prisma/client";
 import { prisma } from "../../config/db.js";
 import { ApiError } from "../../common/utils/ApiError.js";
+import { auditLogger } from "../../common/services/auditLogger.service.js";
 import type { CreateEventInput, UpdateEventInput } from "./event.types.js";
 
 function parseDate(date: Date | string | null | undefined) {
@@ -84,6 +85,14 @@ export const eventService = {
       });
 
       return { event, approval };
+    });
+
+    await auditLogger.logAuditEvent({
+      eventType: "Event Created",
+      employeeId: creatorEmployeeId,
+      contentId: created.event.eventId,
+      channel: "EVENT",
+      outcome: "Created",
     });
 
     return {

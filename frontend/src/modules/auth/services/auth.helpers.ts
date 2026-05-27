@@ -18,10 +18,7 @@ export type AuthPayload = {
   role?: string;
 };
 
-const apiBaseUrl =
-  process.env.NODE_ENV === "development"
-    ? ""
-    : process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "";
+const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "";
 
 export const apiClient = axios.create({
   baseURL: apiBaseUrl,

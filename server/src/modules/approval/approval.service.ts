@@ -1,6 +1,7 @@
 import { ApprovalStatus, ContentType, EventStatus } from "@prisma/client";
 import { prisma } from "../../config/db.js";
 import { ApiError } from "../../common/utils/ApiError.js";
+import { auditLogger } from "../../common/services/auditLogger.service.js";
 
 async function loadPendingEventApprovals() {
   const approvals = await prisma.approval.findMany({
@@ -89,6 +90,15 @@ export const approvalService = {
       return { updatedApproval, updatedEvent };
     });
 
+    await auditLogger.logAuditEvent({
+      eventType: "Event Approved",
+      employeeId: reviewerEmployeeId,
+      contentId: event.eventId,
+      channel: "EVENT",
+      outcome: "Approved",
+      reviewerDecision: "Approved",
+    });
+
     return {
       approvalId: result.updatedApproval.approvalId,
       status: result.updatedApproval.status,
@@ -142,6 +152,15 @@ export const approvalService = {
       });
 
       return { updatedApproval, updatedEvent };
+    });
+
+    await auditLogger.logAuditEvent({
+      eventType: "Event Rejected",
+      employeeId: reviewerEmployeeId,
+      contentId: event.eventId,
+      channel: "EVENT",
+      outcome: "Rejected",
+      reviewerDecision: "Rejected",
     });
 
     return {

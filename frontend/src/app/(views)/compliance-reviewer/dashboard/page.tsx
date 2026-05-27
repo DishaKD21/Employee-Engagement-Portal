@@ -1,11 +1,5 @@
-import React from 'react'
+import ComplianceReviewerDashboardView from "@/modules/compliance-reviewer/views/ComplianceReviewerDashboardView";
 
-const page = () => {
-  return (
-    <div className="min-h-screen flex items-center justify-center">
-      <h1 className="text-2xl font-semibold">This is Compliance Reviewer Dashboard</h1>
-    </div>
-  )
+export default function Page() {
+  return <ComplianceReviewerDashboardView />;
 }
-
-export default page
