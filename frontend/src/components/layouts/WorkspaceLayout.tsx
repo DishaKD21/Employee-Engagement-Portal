@@ -38,6 +38,10 @@ const pageMeta: Record<string, Record<string, { title: string; description: stri
       title: "HR Dashboard",
       description: "Create engagement content and manage the approval pipeline from one place.",
     },
+    "/hr/knowledge-base": {
+      title: "Knowledge Base",
+      description: "Create, submit, approve, and publish HR policy articles through the workflow engine.",
+    },
     "/hr/events": {
       title: "Events",
       description: "Build engagement events and submit them for review before publishing.",
@@ -56,9 +60,17 @@ const pageMeta: Record<string, Record<string, { title: string; description: stri
       title: "HR Manager Dashboard",
       description: "Review employee submissions before they reach the workforce.",
     },
+    "/hr-manager/knowledge-base-approvals": {
+      title: "Knowledge Base Approvals",
+      description: "Review policy articles before they are published and indexed for employees.",
+    },
     "/hr-manager/approvals": {
       title: "Event Approvals",
       description: "Approve or reject submitted engagement event workflows.",
+    },
+    "/hr-manager/escalations": {
+      title: "Escalations",
+      description: "Review chatbot escalations that require manual HR follow-up.",
     },
     "/hr-manager/survey-approvals": {
       title: "Survey Approvals",

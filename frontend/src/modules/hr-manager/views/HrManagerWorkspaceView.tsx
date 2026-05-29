@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, FileText, ShieldCheck, SquareActivity } from "lucide-react";
+import { ArrowRight, BookOpenText, CheckCircle2, FileText, ShieldCheck, SquareActivity } from "lucide-react";
 
 const hrManagerLinks = [
+  { title: "Knowledge Base Approvals", href: "/hr-manager/knowledge-base-approvals", icon: BookOpenText },
   { title: "Event Approvals", href: "/hr-manager/approvals", icon: CheckCircle2 },
   { title: "Survey Approvals", href: "/hr-manager/survey-approvals", icon: SquareActivity },
   { title: "Template Approvals", href: "/hr-manager/template-approvals", icon: FileText },
@@ -22,7 +23,7 @@ export default function HrManagerWorkspaceView() {
 
           return (
             <Link
-              key={item.href}
+              key={`${item.href}-${item.title}`}
               href={item.href}
               className="group flex items-center justify-between rounded-[1.25rem] border border-slate-200 bg-slate-50 px-4 py-4 transition hover:border-violet-200 hover:bg-white hover:shadow-md"
             >

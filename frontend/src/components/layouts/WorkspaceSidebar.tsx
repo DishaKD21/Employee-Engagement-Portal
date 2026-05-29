@@ -62,6 +62,7 @@ const sidebarConfig: Record<WorkspaceRole, { brandTitle: string; brandSubtitle: 
         heading: "MANAGE",
         items: [
           { label: "Dashboard", href: "/hr/dashboard", icon: LayoutGrid },
+          { label: "Knowledge Base", href: "/hr/knowledge-base", icon: BookOpenText },
           { label: "Events", href: "/hr/events", icon: CalendarDays },
           { label: "Surveys", href: "/hr/surveys", icon: MessageSquareText },
           { label: "Recognition Templates", href: "/hr/recognition-templates", icon: FileText },
@@ -77,8 +78,10 @@ const sidebarConfig: Record<WorkspaceRole, { brandTitle: string; brandSubtitle: 
         heading: "REVIEW",
         items: [
           { label: "Dashboard", href: "/hr-manager/dashboard", icon: LayoutGrid },
+          { label: "Knowledge Base Approvals", href: "/hr-manager/knowledge-base-approvals", icon: BookOpenText },
           { label: "Event Approvals", href: "/hr-manager/approvals", icon: CalendarDays },
           { label: "Survey Approvals", href: "/hr-manager/survey-approvals", icon: MessageSquareText },
+          { label: "Escalations", href: "/hr-manager/escalations", icon: BellRing },
           { label: "Template Approvals", href: "/hr-manager/template-approvals", icon: FileText },
         ],
       },
@@ -97,7 +100,7 @@ export function WorkspaceSidebar({ role }: WorkspaceSidebarProps) {
 
   return (
     <aside className="flex h-full w-full flex-col border-r border-slate-200 bg-slate-50/95 px-4 py-5 backdrop-blur xl:px-5">
-      <div className="rounded-[1.5rem] border border-slate-200 bg-white px-4 py-4 shadow-sm">
+      <div className="rounded-3xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-600 text-white shadow-lg shadow-violet-200/70">
             <Sparkles className="h-5 w-5" />
@@ -154,7 +157,7 @@ export function WorkspaceSidebar({ role }: WorkspaceSidebarProps) {
         ))}
       </nav>
 
-      <div className="mt-6 rounded-[1.5rem] border border-slate-200 bg-white px-4 py-4 shadow-sm">
+      <div className="mt-6 rounded-3xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-full bg-violet-50 text-violet-700">
             <ShieldCheck className="h-5 w-5" />

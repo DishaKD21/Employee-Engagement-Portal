@@ -23,6 +23,8 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().positive().default(3000),
   DATABASE_URL: z.string().min(1),
+  AI_SERVICE_URL: z.string().url().default("http://localhost:5000"),
+  AI_SERVICE_TIMEOUT_MS: z.coerce.number().int().positive().default(15000),
   JWT_SECRET: z.string().min(32),
   JWT_EXPIRES_IN: z.string().default("1d"),
   EMPLOYEE_EMAIL_DOMAIN: z.string().default("ethanaegis.com"),

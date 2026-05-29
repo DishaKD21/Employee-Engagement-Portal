@@ -24,7 +24,7 @@ export default function HrWorkspaceView() {
 
             return (
               <Link
-                key={item.href}
+                key={`${item.href}-${item.title}`}
                 href={item.href}
                 className="group flex items-center justify-between rounded-[1.25rem] border border-slate-200 bg-slate-50 px-4 py-4 transition hover:border-violet-200 hover:bg-white hover:shadow-md"
               >

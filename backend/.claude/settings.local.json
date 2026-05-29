@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(curl -s http://localhost:8000/api/v1/employees)",
-      "Bash(curl -s http://localhost:8000/api/v1/knowledge-base/articles)"
-    ]
-  }
-}
