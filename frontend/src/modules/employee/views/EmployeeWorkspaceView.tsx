@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { ArrowRight, BellRing, CalendarDays, BookOpenText, SquareActivity } from "lucide-react";
+import { ArrowRight, BellRing, CalendarDays, MessageSquareText, SquareActivity } from "lucide-react";
 
 const employeeQuickLinks = [
   { title: "Browse Events", href: "/employee/events", icon: CalendarDays },
   { title: "Active Survey", href: "/employee/surveys", icon: SquareActivity },
   { title: "Notifications", href: "/employee/notifications", icon: BellRing },
-  { title: "HR Knowledge Base", href: "/employee/knowledge-base", icon: BookOpenText },
+  { title: "HR Assistant", href: "/employee/knowledge-base", icon: MessageSquareText },
 ];
 
 export default function EmployeeWorkspaceView() {

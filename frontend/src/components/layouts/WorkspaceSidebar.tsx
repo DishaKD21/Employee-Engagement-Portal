@@ -11,7 +11,6 @@ import {
   ShieldCheck,
   Sparkles,
   SquareActivity,
-  Users,
   BellRing,
   CalendarDays,
 } from "lucide-react";
@@ -50,7 +49,7 @@ const sidebarConfig: Record<WorkspaceRole, { brandTitle: string; brandSubtitle: 
       },
       {
         heading: "HR HELP",
-        items: [{ label: "HR Knowledge Base", href: "/employee/knowledge-base", icon: BookOpenText }],
+        items: [{ label: "HR Assistant", href: "/employee/knowledge-base", icon: MessageSquareText }],
       },
     ],
   },
@@ -65,6 +64,7 @@ const sidebarConfig: Record<WorkspaceRole, { brandTitle: string; brandSubtitle: 
           { label: "Knowledge Base", href: "/hr/knowledge-base", icon: BookOpenText },
           { label: "Events", href: "/hr/events", icon: CalendarDays },
           { label: "Surveys", href: "/hr/surveys", icon: MessageSquareText },
+          { label: "Employee Query Escalations", href: "/hr/escalations", icon: BellRing },
           { label: "Recognition Templates", href: "/hr/recognition-templates", icon: FileText },
         ],
       },
@@ -81,7 +81,6 @@ const sidebarConfig: Record<WorkspaceRole, { brandTitle: string; brandSubtitle: 
           { label: "Knowledge Base Approvals", href: "/hr-manager/knowledge-base-approvals", icon: BookOpenText },
           { label: "Event Approvals", href: "/hr-manager/approvals", icon: CalendarDays },
           { label: "Survey Approvals", href: "/hr-manager/survey-approvals", icon: MessageSquareText },
-          { label: "Escalations", href: "/hr-manager/escalations", icon: BellRing },
           { label: "Template Approvals", href: "/hr-manager/template-approvals", icon: FileText },
         ],
       },

@@ -8,6 +8,8 @@ export type ChatbotQueryResponse = {
 	confidence: number;
 	matchedArticleId: number | null;
 	escalate: boolean;
+	escalated: boolean;
+	message?: string;
 	queryId: number;
 	escalationId: number | null;
 };

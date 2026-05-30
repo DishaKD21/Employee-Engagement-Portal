@@ -1,9 +1,11 @@
 import axios from "axios";
-import { QueryStatus } from "@prisma/client";
+import { NotificationChannel, NotificationStatus, NotificationType, QueryStatus } from "@prisma/client";
 import { prisma } from "../../config/db.js";
 import { env } from "../../config/env.js";
 import { ApiError } from "../../common/utils/ApiError.js";
 import { logger } from "../../config/logger.js";
+import { UserRole } from "../../common/constants/userRoles.js";
+import { auditLogger } from "../../common/services/auditLogger.service.js";
 import type { AIServiceQueryResponse, ChatbotQueryRequest, ChatbotQueryResponse } from "./chatbot.types.js";
 
 const aiClient = axios.create({
@@ -11,6 +13,52 @@ const aiClient = axios.create({
 	timeout: env.AI_SERVICE_TIMEOUT_MS,
 	headers: { "Content-Type": "application/json" },
 });
+
+async function findHrAssignee() {
+	const account = await prisma.authAccount.findFirst({
+		where: {
+			role: UserRole.HR_COORDINATOR,
+			isActive: true,
+			employeeId: { not: null },
+		},
+		orderBy: { id: "asc" },
+		select: { employeeId: true },
+	});
+
+	return account?.employeeId ?? null;
+}
+
+async function notifyHrTeam(escalationId: number, queryText: string) {
+	const hrAccounts = await prisma.authAccount.findMany({
+		where: {
+			role: UserRole.HR_COORDINATOR,
+			isActive: true,
+			employeeId: { not: null },
+		},
+		select: { employeeId: true },
+	});
+
+	const recipientIds = hrAccounts.map((account) => account.employeeId).filter((employeeId): employeeId is number => employeeId !== null);
+
+	if (!recipientIds.length) {
+		logger.info("No active HR users found for query escalation notification", { escalationId });
+		return;
+	}
+
+	await prisma.notification.createMany({
+		data: recipientIds.map((employeeId) => ({
+			employeeId,
+			title: "Employee query escalated",
+			message: `A low-confidence employee query needs HR review: ${queryText.slice(0, 180)}`,
+			notificationType: NotificationType.query_response,
+			relatedId: escalationId,
+			relatedType: "query_escalation",
+			channel: NotificationChannel.intranet,
+			status: NotificationStatus.sent,
+			sentAt: new Date(),
+		})),
+	});
+}
 
 export const chatbotService = {
 	async query(request: ChatbotQueryRequest): Promise<ChatbotQueryResponse> {
@@ -47,6 +95,7 @@ export const chatbotService = {
 
 		const confidence = Number(aiResponse.confidence ?? 0);
 		const matchedArticleId = aiResponse.matched_article_id ?? null;
+		const persistedMatchedArticleId = matchedArticleId && matchedArticleId > 0 ? matchedArticleId : null;
 		const shouldEscalate = Boolean(aiResponse.escalate || confidence < 0.9);
 		const answer = aiResponse.answer ?? null;
 
@@ -54,9 +103,9 @@ export const chatbotService = {
 			data: {
 				employeeId: request.employeeId ?? null,
 				queryText: request.queryText,
-				matchedArticleId,
+				matchedArticleId: shouldEscalate ? null : persistedMatchedArticleId,
 				confidenceScore: confidence,
-				responseDelivered: answer,
+				responseDelivered: shouldEscalate ? null : answer,
 				escalationFlag: shouldEscalate,
 			},
 		});
@@ -64,18 +113,37 @@ export const chatbotService = {
 		let escalationId: number | null = null;
 
 		if (shouldEscalate) {
+			const assignedTo = await findHrAssignee();
 			const escalation = await prisma.queryEscalation.create({
 				data: {
 					queryId: queryLog.queryId,
 					status: QueryStatus.open,
-					assignedTo: null,
+					assignedTo,
 				},
 			});
 
 			escalationId = escalation.id;
+			await auditLogger.logAuditEvent({
+				eventType: "Query Escalated",
+				employeeId: request.employeeId,
+				contentId: escalationId,
+				channel: "CHATBOT",
+				outcome: "Pending HR response",
+				reviewerDecision: "Pending",
+			});
+			await auditLogger.logAuditEvent({
+				eventType: "Escalation Assigned",
+				employeeId: assignedTo ?? undefined,
+				contentId: escalationId,
+				channel: "QUERY_ESCALATION",
+				outcome: assignedTo ? "Assigned to HR" : "Pending HR assignment",
+				reviewerDecision: "Pending",
+			});
+			await notifyHrTeam(escalationId, request.queryText);
 			logger.info("Chatbot query escalated", {
 				queryId: queryLog.queryId,
 				escalationId,
+				assignedTo,
 				confidence,
 			});
 		}
@@ -85,6 +153,10 @@ export const chatbotService = {
 			confidence,
 			matchedArticleId: shouldEscalate ? null : matchedArticleId,
 			escalate: shouldEscalate,
+			escalated: shouldEscalate,
+			message: shouldEscalate
+				? "Your query has been escalated to HR. You will receive a response shortly."
+				: undefined,
 			queryId: queryLog.queryId,
 			escalationId,
 		};

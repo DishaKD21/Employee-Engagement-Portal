@@ -65,6 +65,8 @@ export type ChatbotResponse = {
   confidence: number;
   matchedArticleId: number | null;
   escalate: boolean;
+  escalated?: boolean;
+  message?: string;
   queryId: number;
   escalationId: number | null;
 };
@@ -82,6 +84,27 @@ export type QueryLogEntry = {
     status: string | null;
     resolutionText: string | null;
     resolvedAt: string | null;
+  } | null;
+};
+
+export type QueryEscalationEntry = {
+  id: number;
+  assignedTo: number | null;
+  status: string | null;
+  resolutionText: string | null;
+  resolvedAt: string | null;
+  query?: {
+    queryId: number;
+    employeeId: number | null;
+    queryText: string | null;
+    confidenceScore: number | null;
+    createdAt: string;
+    employee?: {
+      employeeId: number;
+      name: string | null;
+      email: string;
+      department: string | null;
+    } | null;
   } | null;
 };
 
@@ -136,5 +159,20 @@ export async function fetchChatbotHistory() {
 
 export async function fetchEscalations() {
   const response = await apiClient.get("/api/query-escalations");
-  return response.data?.data ?? response.data;
+  return (response.data?.data ?? response.data) as QueryEscalationEntry[];
+}
+
+export async function fetchAllEscalations() {
+  const response = await apiClient.get("/api/query-escalations/all");
+  return (response.data?.data ?? response.data) as QueryEscalationEntry[];
+}
+
+export async function fetchMyEscalations() {
+  const response = await apiClient.get("/api/query-escalations/my");
+  return (response.data?.data ?? response.data) as QueryEscalationEntry[];
+}
+
+export async function respondToEscalation(escalationId: number, resolutionText: string) {
+  const response = await apiClient.post(`/api/query-escalations/${escalationId}/respond`, { resolutionText });
+  return response.data?.data as QueryEscalationEntry;
 }

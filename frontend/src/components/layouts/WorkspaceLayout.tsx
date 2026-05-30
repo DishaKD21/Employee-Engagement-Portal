@@ -14,15 +14,15 @@ const pageMeta: Record<string, Record<string, { title: string; description: stri
   employee: {
     "/employee/dashboard": {
       title: "My Portal",
-      description: "Your central hub for events, surveys, notifications, and HR support content.",
+      description: "Your central hub for events, surveys, notifications, and HR support.",
     },
     "/employee/surveys": {
       title: "Active Survey",
       description: "Review live surveys and submit responses from a single workspace.",
     },
     "/employee/knowledge-base": {
-      title: "HR Knowledge Base",
-      description: "Browse policy articles and support content already published for employees.",
+      title: "HR Assistant",
+      description: "Ask HR questions through the assistant and track escalated query responses.",
     },
     "/employee/events": {
       title: "Employee Events",
@@ -67,10 +67,6 @@ const pageMeta: Record<string, Record<string, { title: string; description: stri
     "/hr-manager/approvals": {
       title: "Event Approvals",
       description: "Approve or reject submitted engagement event workflows.",
-    },
-    "/hr-manager/escalations": {
-      title: "Escalations",
-      description: "Review chatbot escalations that require manual HR follow-up.",
     },
     "/hr-manager/survey-approvals": {
       title: "Survey Approvals",

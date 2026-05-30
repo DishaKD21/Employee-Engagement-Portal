@@ -21,12 +21,32 @@ export const queryEscalationController = {
     return sendSuccess(res, result, MESSAGES.FETCHED, 200);
   },
 
+  async listAllForHr(_req: Request, res: Response) {
+    const result = await queryEscalationService.listAllForHr();
+    return sendSuccess(res, result, MESSAGES.FETCHED, 200);
+  },
+
+  async getEscalation(req: Request, res: Response) {
+    const escalationId = parseEscalationId(req.params.id);
+    const result = await queryEscalationService.getEscalation(escalationId);
+    return sendSuccess(res, result, MESSAGES.FETCHED, 200);
+  },
+
+  async listMyEscalations(req: Request, res: Response) {
+    if (!req.user?.employeeId) {
+      throw new ApiError(403, "Employee profile is required");
+    }
+
+    const result = await queryEscalationService.listMyEscalations(req.user.employeeId);
+    return sendSuccess(res, result, MESSAGES.FETCHED, 200);
+  },
+
   async resolveEscalation(req: Request, res: Response) {
     const escalationId = parseEscalationId(req.params.id);
     const result = await queryEscalationService.resolveEscalation(
       escalationId,
       req.body.resolutionText,
-      req.body.assignedTo,
+      req.user?.employeeId ?? undefined,
     );
 
     return sendSuccess(res, result, MESSAGES.UPDATED, 200);

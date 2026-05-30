@@ -17,7 +17,6 @@ knowledgeBaseRouter.get(
 	"/articles",
 	authenticate,
 	authorize([
-		UserRole.EMPLOYEE,
 		UserRole.HR_COORDINATOR,
 		UserRole.HR_OPERATIONS_MANAGER,
 		UserRole.COMPLIANCE_REVIEWER,

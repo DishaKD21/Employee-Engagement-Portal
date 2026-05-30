@@ -1,30 +1,54 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { ArrowRight, BookOpenText, MessageSquareText, ShieldAlert, Sparkles } from "lucide-react";
+import { Clock3, MessageSquareText, ShieldAlert, Sparkles } from "lucide-react";
 import {
   fetchChatbotHistory,
-  fetchKnowledgeBaseArticles,
+  fetchMyEscalations,
   submitChatbotQuery,
   type ChatbotResponse,
-  type KnowledgeBaseArticle,
+  type QueryEscalationEntry,
   type QueryLogEntry,
 } from "@/lib/api-client";
 
+function formatDate(value?: string | null) {
+  if (!value) return "Not available";
+  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+}
+
+function statusLabel(status?: string | null) {
+  return status === "resolved" ? "Resolved" : "Pending";
+}
+
 export default function EmployeeKnowledgeBaseView() {
-  const [articles, setArticles] = useState<KnowledgeBaseArticle[]>([]);
   const [history, setHistory] = useState<QueryLogEntry[]>([]);
+  const [myQueries, setMyQueries] = useState<QueryEscalationEntry[]>([]);
   const [queryText, setQueryText] = useState("");
   const [response, setResponse] = useState<ChatbotResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const reload = async () => {
+    const [queryHistory, escalations] = await Promise.all([fetchChatbotHistory(), fetchMyEscalations()]);
+    setHistory(queryHistory);
+    setMyQueries(escalations);
+  };
+
   useEffect(() => {
+    let mounted = true;
+
     void (async () => {
-      const [articleList, queryHistory] = await Promise.all([fetchKnowledgeBaseArticles(), fetchChatbotHistory()]);
-      setArticles(articleList);
-      setHistory(queryHistory);
+      const [queryHistory, escalations] = await Promise.all([fetchChatbotHistory(), fetchMyEscalations()]);
+
+      if (mounted) {
+        setHistory(queryHistory);
+        setMyQueries(escalations);
+      }
     })();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -35,7 +59,7 @@ export default function EmployeeKnowledgeBaseView() {
     try {
       const result = await submitChatbotQuery(queryText);
       setResponse(result);
-      setHistory(await fetchChatbotHistory());
+      await reload();
       setQueryText("");
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Unable to submit query");
@@ -50,7 +74,7 @@ export default function EmployeeKnowledgeBaseView() {
         <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-violet-600">HR Help</p>
         <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Enterprise HR Knowledge Assistant</h2>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-          Ask policy questions here. Low-confidence responses are escalated for HR follow-up, while approved articles stay indexed in the isolated AI service.
+          Ask HR questions here. If the assistant is not confident, your question is routed to HR and tracked below.
         </p>
 
         <form onSubmit={onSubmit} className="mt-6 space-y-3 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
@@ -62,12 +86,12 @@ export default function EmployeeKnowledgeBaseView() {
             placeholder="How many leave days can I carry forward?"
             className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-violet-400"
           />
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-xs text-slate-500">Answers come from the separate FastAPI service through the Node workflow layer.</p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-slate-500">Knowledge retrieval happens through the assistant only.</p>
             <button
               type="submit"
               disabled={loading || !queryText.trim()}
-              className="inline-flex items-center gap-2 rounded-full bg-violet-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-violet-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <MessageSquareText className="h-4 w-4" />
               {loading ? "Sending..." : "Ask AI"}
@@ -86,49 +110,58 @@ export default function EmployeeKnowledgeBaseView() {
               {response.escalate ? "Escalation created" : "AI answer"}
             </div>
             <p className="mt-2 text-sm leading-6 text-slate-700">
-              {response.answer ?? "The request has been routed to HR because the AI confidence fell below the escalation threshold."}
+              {response.answer ?? response.message ?? "Your query has been escalated to HR. You will receive a response shortly."}
             </p>
             <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-500">
               <span className="rounded-full bg-slate-100 px-3 py-1">Confidence: {(response.confidence * 100).toFixed(0)}%</span>
-              <span className="rounded-full bg-slate-100 px-3 py-1">Matched article: {response.matchedArticleId ?? "none"}</span>
               <span className="rounded-full bg-slate-100 px-3 py-1">Escalation: {response.escalate ? "yes" : "no"}</span>
             </div>
           </div>
         ) : null}
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+      <section className="grid gap-6 lg:grid-cols-[1fr_0.85fr]">
         <div className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center gap-2">
-            <BookOpenText className="h-5 w-5 text-violet-600" />
-            <h3 className="text-lg font-semibold text-slate-900">Published articles</h3>
+            <Clock3 className="h-5 w-5 text-violet-600" />
+            <h3 className="text-lg font-semibold text-slate-900">My Queries</h3>
           </div>
           <div className="mt-4 space-y-3">
-            {articles.map((article) => (
-              <article key={article.articleId} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-                <div className="flex items-center justify-between gap-3">
-                  <h4 className="font-semibold text-slate-900">{article.title}</h4>
-                  <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700">{article.status}</span>
+            {myQueries.length === 0 ? (
+              <p className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+                No escalated queries yet.
+              </p>
+            ) : null}
+            {myQueries.map((entry) => (
+              <div key={entry.id} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="text-sm font-semibold text-slate-900">{entry.query?.queryText}</p>
+                  <span className="shrink-0 rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
+                    {statusLabel(entry.status)}
+                  </span>
                 </div>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  {article.content?.slice(0, 180)}{article.content && article.content.length > 180 ? "..." : ""}
+                <p className="mt-1 text-xs text-slate-500">Submitted: {formatDate(entry.query?.createdAt)}</p>
+                <p className="mt-3 text-sm leading-6 text-slate-700">
+                  {entry.resolutionText ?? "HR is reviewing this question."}
                 </p>
-              </article>
+              </div>
             ))}
           </div>
         </div>
 
         <div className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center gap-2">
-            <ArrowRight className="h-5 w-5 text-violet-600" />
-            <h3 className="text-lg font-semibold text-slate-900">Query history</h3>
+            <MessageSquareText className="h-5 w-5 text-violet-600" />
+            <h3 className="text-lg font-semibold text-slate-900">Chat history</h3>
           </div>
           <div className="mt-4 space-y-3">
             {history.map((entry) => (
               <div key={entry.queryId} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
                 <p className="text-sm font-medium text-slate-900">{entry.queryText}</p>
                 <p className="mt-1 text-xs text-slate-500">Confidence: {(Number(entry.confidenceScore ?? 0) * 100).toFixed(0)}%</p>
-                <p className="mt-2 text-sm text-slate-600">{entry.responseDelivered ?? "Escalated for manual resolution."}</p>
+                <p className="mt-2 text-sm text-slate-600">
+                  {entry.escalationFlag ? "Escalated for HR review." : entry.responseDelivered}
+                </p>
               </div>
             ))}
           </div>

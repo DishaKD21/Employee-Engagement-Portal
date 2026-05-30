@@ -12,14 +12,43 @@ export const queryEscalationRouter = Router();
 queryEscalationRouter.get(
   "/",
   authenticate,
-  authorize([UserRole.HR_COORDINATOR, UserRole.HR_OPERATIONS_MANAGER, UserRole.SUPER_ADMIN]),
+  authorize([UserRole.HR_COORDINATOR, UserRole.SUPER_ADMIN]),
   catchAsync(queryEscalationController.listEscalations),
+);
+
+queryEscalationRouter.get(
+  "/all",
+  authenticate,
+  authorize([UserRole.HR_COORDINATOR, UserRole.SUPER_ADMIN]),
+  catchAsync(queryEscalationController.listAllForHr),
+);
+
+queryEscalationRouter.get(
+  "/my",
+  authenticate,
+  authorize([UserRole.EMPLOYEE]),
+  catchAsync(queryEscalationController.listMyEscalations),
+);
+
+queryEscalationRouter.get(
+  "/:id",
+  authenticate,
+  authorize([UserRole.HR_COORDINATOR, UserRole.SUPER_ADMIN]),
+  catchAsync(queryEscalationController.getEscalation),
+);
+
+queryEscalationRouter.post(
+  "/:id/respond",
+  authenticate,
+  authorize([UserRole.HR_COORDINATOR, UserRole.SUPER_ADMIN]),
+  validate(queryEscalationResolutionSchema),
+  catchAsync(queryEscalationController.resolveEscalation),
 );
 
 queryEscalationRouter.patch(
   "/:id/resolve",
   authenticate,
-  authorize([UserRole.HR_COORDINATOR, UserRole.HR_OPERATIONS_MANAGER, UserRole.SUPER_ADMIN]),
+  authorize([UserRole.HR_COORDINATOR, UserRole.SUPER_ADMIN]),
   validate(queryEscalationResolutionSchema),
   catchAsync(queryEscalationController.resolveEscalation),
 );
