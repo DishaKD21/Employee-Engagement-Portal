@@ -22,6 +22,10 @@ logger.info(
     endpoint_type,
 )
 
+
+def get_database_schema() -> str:
+    return os.getenv("DB_SCHEMA", "ethan")
+
 engine_url = re.sub(r"^postgresql:", "postgresql+psycopg:", database_url, count=1)
 engine = create_engine(engine_url, pool_pre_ping=True)
 
@@ -35,8 +39,14 @@ def init_db() -> None:
 
     with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as connection:
         connection.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+        vector_schema = connection.execute(
+            text("SELECT extnamespace::regnamespace::text FROM pg_extension WHERE extname = 'vector'")
+        ).scalar_one_or_none() or "public"
 
     with engine.begin() as connection:
+        search_path_schemas = list(dict.fromkeys([get_database_schema(), vector_schema, "public"]))
+        quoted_search_path = ", ".join(f'"{schema}"' for schema in search_path_schemas)
+        connection.execute(text(f"SET search_path TO {quoted_search_path}"))
         connection.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
         Base.metadata.create_all(bind=connection)
 
