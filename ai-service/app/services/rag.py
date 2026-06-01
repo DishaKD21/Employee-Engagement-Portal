@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import json
+import logging
 import re
 from typing import Iterable
 from urllib import error, request
-import json
 
 from sqlalchemy import delete
 from sqlalchemy.orm import Session
@@ -11,6 +12,8 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.models.rag_vector import KnowledgeBaseChunk
 from app.services.embedding import embed_text
+
+logger = logging.getLogger("ai-service")
 
  
 def split_text_into_chunks(text: str) -> list[str]:
@@ -90,13 +93,53 @@ def cosine_similarity(a: Iterable[float], b: Iterable[float]) -> float:
     return dot / (a_norm * b_norm)
 
 
-def retrieve_best_chunk(db: Session, query_text: str) -> KnowledgeBaseChunk | None:
+def retrieve_best_chunk(db: Session, query_text: str, top_k: int = 5) -> KnowledgeBaseChunk | None:
     query_embedding = embed_text(query_text)
-    return (
-        db.query(KnowledgeBaseChunk)
-        .order_by(KnowledgeBaseChunk.embedding.cosine_distance(query_embedding))
-        .first()
+
+    try:
+        # fetch top_k candidate chunks by vector distance
+        candidates = (
+            db.query(KnowledgeBaseChunk)
+            .order_by(KnowledgeBaseChunk.embedding.cosine_distance(query_embedding))
+            .limit(top_k)
+            .all()
+        )
+    except Exception:
+        logger.exception("Failed to retrieve candidate chunks from DB")
+        candidates = []
+
+    # Log query embedding summary (first 6 values and length)
+    try:
+        embedding_preview = query_embedding[:6] if hasattr(query_embedding, "__iter__") else None
+        logger.info(
+            "RAG: query embedding generated | query=%r | embedding_dim=%s | embedding_preview=%s",
+            query_text,
+            len(query_embedding),
+            embedding_preview,
+        )
+    except Exception:
+        logger.debug("RAG: failed to log query embedding preview")
+
+    # compute similarity scores for logging
+    similarities: list[tuple[int, float]] = []
+    for c in candidates:
+        try:
+            score = cosine_similarity(query_embedding, c.embedding)
+        except Exception:
+            score = 0.0
+        similarities.append((c.id, score))
+
+    top_chunk_text = candidates[0].chunk_text[:320] if candidates and candidates[0].chunk_text else None
+    logger.info(
+        "RAG: retrieved candidate chunks | query=%r | candidate_count=%s | similarities=%s | top_chunk_ids=%s | top_chunk_text=%r",
+        query_text,
+        len(candidates),
+        similarities,
+        [c.id for c in candidates],
+        top_chunk_text,
     )
+
+    return candidates[0] if candidates else None
 
 
 def build_answer(query_text: str, chunk: KnowledgeBaseChunk) -> str:
@@ -107,15 +150,7 @@ def build_answer(query_text: str, chunk: KnowledgeBaseChunk) -> str:
     return f"Based on {source_title}, {excerpt}"
 
 
-def generate_local_answer(query_text: str, chunk: KnowledgeBaseChunk) -> str:
-    prompt = (
-        "You are an enterprise HR knowledge assistant. Use only the provided policy context. "
-        "If the context is insufficient, say the question should be escalated to HR.\n\n"
-        f"Question: {query_text}\n"
-        f"Policy context: {chunk.chunk_text}\n\n"
-        "Answer in a concise, helpful paragraph."
-    )
-
+def call_ollama(prompt: str) -> str | None:
     payload = json.dumps({
         "model": settings.ollama_model,
         "prompt": prompt,
@@ -129,16 +164,53 @@ def generate_local_answer(query_text: str, chunk: KnowledgeBaseChunk) -> str:
         method="POST",
     )
 
+    logger.info(
+        "BEFORE_OLLAMA_CALL | model=%s | base_url=%s | prompt_length=%s",
+        settings.ollama_model,
+        settings.ollama_base_url,
+        len(prompt),
+    )
+
     try:
         with request.urlopen(ollama_request, timeout=20) as response:
-            response_payload = json.loads(response.read().decode("utf-8"))
+            raw = response.read().decode("utf-8")
+            try:
+                response_payload = json.loads(raw)
+            except Exception:
+                logger.error("OLLAMA_EXCEPTION | invalid_json_response")
+                return None
+
             answer = (response_payload.get("response") or "").strip()
-            if answer:
-                return answer
+            logger.info(
+                "AFTER_OLLAMA_CALL | model=%s | has_answer=%s | response_preview=%r",
+                settings.ollama_model,
+                bool(answer),
+                (answer[:320] + "...") if len(answer) > 320 else answer,
+            )
+            return answer or None
     except (error.URLError, TimeoutError, ValueError, OSError):
-        pass
+        logger.exception("OLLAMA_EXCEPTION | request_failed")
+        return None
+
+
+def generate_answer(query_text: str, chunk: KnowledgeBaseChunk) -> str:
+    prompt = (
+        "You are an enterprise HR knowledge assistant. Use only the provided policy context. "
+        "If the context is insufficient, say the question should be escalated to HR.\n\n"
+        f"Question: {query_text}\n"
+        f"Policy context: {chunk.chunk_text}\n\n"
+        "Answer in a concise, helpful paragraph."
+    )
+
+    answer = call_ollama(prompt)
+    if answer:
+        return answer
 
     return build_answer(query_text, chunk)
+
+
+def generate_local_answer(query_text: str, chunk: KnowledgeBaseChunk) -> str:
+    return generate_answer(query_text, chunk)
 
 
 def score_confidence(query_text: str, chunk: KnowledgeBaseChunk | None) -> float:
@@ -148,6 +220,24 @@ def score_confidence(query_text: str, chunk: KnowledgeBaseChunk | None) -> float
     query_terms = {token for token in re.findall(r"[a-z0-9]+", query_text.lower()) if len(token) > 2}
     chunk_terms = {token for token in re.findall(r"[a-z0-9]+", (chunk.chunk_text or "").lower()) if len(token) > 2}
     term_overlap = len(query_terms & chunk_terms) / max(len(query_terms), 1)
-    semantic_score = cosine_similarity(embed_text(query_text), chunk.embedding)
+    # compute semantic similarity using the same embedding call as retrieval
+    query_embedding = embed_text(query_text)
+    semantic_score = cosine_similarity(query_embedding, chunk.embedding)
     raw_score = (semantic_score * 0.8) + (term_overlap * 0.2)
-    return max(0.0, min(1.0, raw_score))
+
+    final_score = max(0.0, min(1.0, raw_score))
+
+    # Log scoring details for debugging
+    try:
+        logger.info(
+            "RAG: scoring confidence | query=%r | term_overlap=%s | semantic_score=%s | raw_score=%s | final_confidence=%s",
+            query_text,
+            term_overlap,
+            semantic_score,
+            raw_score,
+            final_score,
+        )
+    except Exception:
+        logger.debug("RAG: failed to log scoring details")
+
+    return final_score

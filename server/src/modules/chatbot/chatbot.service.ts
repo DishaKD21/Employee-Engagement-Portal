@@ -96,7 +96,10 @@ export const chatbotService = {
 		const confidence = Number(aiResponse.confidence ?? 0);
 		const matchedArticleId = aiResponse.matched_article_id ?? null;
 		const persistedMatchedArticleId = matchedArticleId && matchedArticleId > 0 ? matchedArticleId : null;
-		const shouldEscalate = Boolean(aiResponse.escalate || confidence < 0.9);
+		// Use the AI service's explicit escalate decision to determine escalation.
+		// Do not apply a separate hard-coded threshold here so the AI service
+		// controls when to escalate based on its configured threshold.
+		const shouldEscalate = Boolean(aiResponse.escalate);
 		const answer = aiResponse.answer ?? null;
 
 		const queryLog = await prisma.queryLog.create({
