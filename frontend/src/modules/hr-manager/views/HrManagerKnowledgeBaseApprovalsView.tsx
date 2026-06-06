@@ -1,8 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Checkbox } from "@mantine/core";
 import { approveKnowledgeBaseArticle, fetchKnowledgeBaseApprovals, rejectKnowledgeBaseArticle, type KnowledgeBaseArticle } from "@/lib/api-client";
 import { getErrorMessage } from "@/modules/auth/services/auth.helpers";
+import { DataTableShell, DataViewport, EmptyState, EnterpriseBadge, EnterpriseButton, EnterpriseCard, PaginationBar, SectionHeader } from "@/components/ui/enterprise";
+import { useClientPagination } from "@/hooks/useClientPagination";
+import { useRowSelection } from "@/hooks/useRowSelection";
 
 function formatDate(value?: string | null) {
   if (!value) return "-";
@@ -14,9 +18,9 @@ function formatDate(value?: string | null) {
 function statusTone(status?: string | null) {
   const normalized = status?.toLowerCase();
 
-  if (normalized === "published" || normalized === "approved") return "bg-emerald-100 text-emerald-700";
-  if (normalized === "rejected") return "bg-rose-100 text-rose-700";
-  return "bg-amber-100 text-amber-700";
+  if (normalized === "published" || normalized === "approved") return "approved";
+  if (normalized === "rejected") return "rejected";
+  return "pending";
 }
 
 export default function HrManagerKnowledgeBaseApprovalsView() {
@@ -25,6 +29,8 @@ export default function HrManagerKnowledgeBaseApprovalsView() {
   const [message, setMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const pagination = useClientPagination(approvals);
+  const selection = useRowSelection(pagination.paginatedItems.map((approval) => approval.articleId), approvals.map((approval) => approval.articleId));
 
   async function loadApprovals() {
     setLoading(true);
@@ -39,7 +45,7 @@ export default function HrManagerKnowledgeBaseApprovalsView() {
   }
 
   useEffect(() => {
-    void loadApprovals();
+    void loadApprovals(); // eslint-disable-line react-hooks/set-state-in-effect
   }, []);
 
   const handleApprove = async (approval: KnowledgeBaseArticle) => {
@@ -67,94 +73,84 @@ export default function HrManagerKnowledgeBaseApprovalsView() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 px-6 py-10">
-      <div className="mx-auto flex max-w-7xl flex-col gap-6">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Knowledge Base Approvals</h1>
-          <p className="mt-2 text-slate-600">Review pending policy articles from HR and publish approved content to the AI indexer.</p>
-        </div>
+    <div className="space-y-6">
+      <SectionHeader
+        eyebrow="Knowledge Base"
+        title="Knowledge Base Approvals"
+        description="Review pending policy articles from HR and publish approved content to the AI indexer."
+      />
 
-        {message ? <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</div> : null}
-        {errorMessage ? <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{errorMessage}</div> : null}
+      {message ? <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</div> : null}
+      {errorMessage ? <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{errorMessage}</div> : null}
 
-        {selectedApproval ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-3">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <h2 className="text-xl font-semibold text-slate-900">{selectedApproval.title}</h2>
-                <p className="mt-1 text-sm text-slate-600">{selectedApproval.category ?? "Uncategorized"} • {selectedApproval.writer?.name ?? "Unknown author"}</p>
-              </div>
-              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusTone(selectedApproval.status)}`}>
-                {selectedApproval.status ?? "pending"}
-              </span>
+      {selectedApproval ? (
+        <EnterpriseCard className="p-6 space-y-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">{selectedApproval.title}</h2>
+              <p className="mt-1 text-sm text-slate-600">
+                {selectedApproval.category ?? "Uncategorized"} • {selectedApproval.writer?.name ?? "Unknown author"}
+              </p>
             </div>
-            <p className="text-sm leading-6 text-slate-700">{selectedApproval.content}</p>
-            <div className="flex flex-wrap gap-2 pt-1">
-              <button
-                type="button"
-                onClick={() => void handleApprove(selectedApproval)}
-                className="rounded-lg border border-emerald-300 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
-              >
-                Approve
-              </button>
-              <button
-                type="button"
-                onClick={() => void handleReject(selectedApproval)}
-                className="rounded-lg border border-rose-300 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50"
-              >
-                Reject
-              </button>
-            </div>
+            <EnterpriseBadge tone={statusTone(selectedApproval.status)}>{selectedApproval.status ?? "pending"}</EnterpriseBadge>
           </div>
-        ) : null}
+          <p className="text-sm leading-6 text-slate-700">{selectedApproval.content}</p>
+          <div className="flex flex-wrap gap-2 pt-1">
+            <EnterpriseButton type="button" variant="primary" onClick={() => void handleApprove(selectedApproval)}>
+              Approve
+            </EnterpriseButton>
+            <EnterpriseButton type="button" variant="danger" onClick={() => void handleReject(selectedApproval)}>
+              Reject
+            </EnterpriseButton>
+          </div>
+        </EnterpriseCard>
+      ) : null}
 
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
-            <thead className="bg-slate-50 text-slate-600">
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
+          <Checkbox checked={selection.allVisibleSelected} indeterminate={selection.someVisibleSelected} onChange={selection.toggleVisible} label="Select all" />
+          <span>{selection.selectedCount} items selected</span>
+          {selection.selectedCount ? <button type="button" className="font-semibold text-blue-700" onClick={selection.clearSelection}>Deselect all</button> : null}
+        </div>
+        <DataTableShell>
+          <DataViewport>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+            <thead className="sticky top-0 z-[1] bg-slate-50 text-slate-600">
               <tr>
-                <th className="px-4 py-3 font-medium">Title</th>
-                <th className="px-4 py-3 font-medium">Category</th>
-                <th className="px-4 py-3 font-medium">Author</th>
-                <th className="px-4 py-3 font-medium">Created Date</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Actions</th>
+                <th className="w-12 px-5 py-3 font-semibold"></th>
+                <th className="px-5 py-3 font-semibold">Title</th>
+                <th className="px-5 py-3 font-semibold">Category</th>
+                <th className="px-5 py-3 font-semibold">Author</th>
+                <th className="px-5 py-3 font-semibold">Created Date</th>
+                <th className="px-5 py-3 font-semibold">Status</th>
+                <th className="px-5 py-3 font-semibold">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {approvals.map((approval) => (
-                <tr key={approval.articleId} className="text-slate-800">
-                  <td className="px-4 py-4 font-medium">{approval.title}</td>
-                  <td className="px-4 py-4">{approval.category ?? "-"}</td>
-                  <td className="px-4 py-4">{approval.writer?.name ?? "-"}</td>
-                  <td className="px-4 py-4">{formatDate(approval.createdAt)}</td>
-                  <td className="px-4 py-4">
-                    <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${statusTone(approval.status)}`}>
-                      {approval.status ?? "pending"}
-                    </span>
+            <tbody className="divide-y divide-slate-100 bg-white">
+              {pagination.paginatedItems.map((approval) => (
+                <tr key={approval.articleId} className="text-slate-800 hover:bg-slate-50/80">
+                  <td className="px-5 py-4">
+                    <Checkbox checked={selection.selectedSet.has(approval.articleId)} onChange={() => selection.toggleOne(approval.articleId)} aria-label={`Select ${approval.title ?? "article"}`} />
                   </td>
-                  <td className="px-4 py-4">
+                  <td className="px-5 py-4 font-medium text-slate-900">{approval.title}</td>
+                  <td className="px-5 py-4">{approval.category ?? "-"}</td>
+                  <td className="px-5 py-4">{approval.writer?.name ?? "-"}</td>
+                  <td className="px-5 py-4">{formatDate(approval.createdAt)}</td>
+                  <td className="px-5 py-4">
+                    <EnterpriseBadge tone={statusTone(approval.status)}>{approval.status ?? "pending"}</EnterpriseBadge>
+                  </td>
+                  <td className="px-5 py-4">
                     <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedApproval(approval)}
-                        className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold hover:bg-slate-50"
-                      >
+                      <EnterpriseButton type="button" variant="secondary" onClick={() => setSelectedApproval(approval)}>
                         View
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void handleApprove(approval)}
-                        className="rounded-lg border border-emerald-300 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
-                      >
+                      </EnterpriseButton>
+                      <EnterpriseButton type="button" variant="primary" onClick={() => void handleApprove(approval)}>
                         Approve
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void handleReject(approval)}
-                        className="rounded-lg border border-rose-300 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50"
-                      >
+                      </EnterpriseButton>
+                      <EnterpriseButton type="button" variant="danger" onClick={() => void handleReject(approval)}>
                         Reject
-                      </button>
+                      </EnterpriseButton>
                     </div>
                   </td>
                 </tr>
@@ -162,14 +158,17 @@ export default function HrManagerKnowledgeBaseApprovalsView() {
 
               {!loading && !approvals.length ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
-                    No pending knowledge base approvals.
+                  <td colSpan={7} className="px-5 py-8">
+                    <EmptyState title="No pending knowledge base approvals." description="Knowledge base reviews awaiting approval will appear here." />
                   </td>
                 </tr>
               ) : null}
             </tbody>
-          </table>
-        </div>
+            </table>
+          </div>
+          </DataViewport>
+        </DataTableShell>
+        <PaginationBar {...pagination} onChange={pagination.setPage} onPageSizeChange={pagination.setPageSize} disabled={loading} />
       </div>
     </div>
   );

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import SurveyQuestionBuilder from "./SurveyQuestionBuilder";
 import type { SurveyFormValues } from "../services/survey.service";
+import { EnterpriseButton, EnterpriseHelperText, EnterpriseInput, EnterpriseLabel } from "@/components/ui/enterprise";
 
 type Props = {
   initialValues?: Partial<SurveyFormValues>;
@@ -58,48 +59,56 @@ export default function SurveyForm({ initialValues, onSubmit, onCancel, submitLa
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <form onSubmit={handleSubmit} className="space-y-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-slate-900">{title ?? "Survey Form"}</h2>
-          <p className="text-sm text-slate-500">Create a survey and submit it for HR Manager approval.</p>
+          <h2 className="text-lg font-semibold text-slate-900">{title ?? "Survey Form"}</h2>
+          <EnterpriseHelperText>Create a survey and submit it for HR Manager approval.</EnterpriseHelperText>
         </div>
         {onCancel ? (
-          <button type="button" onClick={onCancel} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+          <EnterpriseButton type="button" variant="secondary" onClick={onCancel}>
             Cancel
-          </button>
+          </EnterpriseButton>
         ) : null}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <input
+        <div className="space-y-2">
+          <EnterpriseLabel>Survey title</EnterpriseLabel>
+          <EnterpriseInput
           value={values.title}
           onChange={(event) => setValues((current) => ({ ...current, title: event.target.value }))}
           placeholder="Survey title"
           required
-          className="rounded-lg border border-slate-300 px-4 py-3 text-sm"
-        />
-        <input
+          />
+        </div>
+        <div className="space-y-2">
+          <EnterpriseLabel>Target audience</EnterpriseLabel>
+          <EnterpriseInput
           value={values.target_audience}
           onChange={(event) => setValues((current) => ({ ...current, target_audience: event.target.value }))}
           placeholder="Target audience"
           required
-          className="rounded-lg border border-slate-300 px-4 py-3 text-sm"
-        />
-        <input
+          />
+        </div>
+        <div className="space-y-2">
+          <EnterpriseLabel>Open date</EnterpriseLabel>
+          <EnterpriseInput
           type="date"
           value={values.open_date}
           onChange={(event) => setValues((current) => ({ ...current, open_date: event.target.value }))}
           required
-          className="rounded-lg border border-slate-300 px-4 py-3 text-sm"
-        />
-        <input
+          />
+        </div>
+        <div className="space-y-2">
+          <EnterpriseLabel>Close date</EnterpriseLabel>
+          <EnterpriseInput
           type="date"
           value={values.close_date}
           onChange={(event) => setValues((current) => ({ ...current, close_date: event.target.value }))}
           required
-          className="rounded-lg border border-slate-300 px-4 py-3 text-sm"
-        />
+          />
+        </div>
       </div>
 
       <label className="flex items-center gap-3 text-sm font-medium text-slate-700">
@@ -107,7 +116,7 @@ export default function SurveyForm({ initialValues, onSubmit, onCancel, submitLa
           type="checkbox"
           checked={values.is_anonymous}
           onChange={(event) => setValues((current) => ({ ...current, is_anonymous: event.target.checked }))}
-          className="h-4 w-4 rounded border-slate-300"
+          className="h-4 w-4 rounded border-slate-300 text-blue-700"
         />
         Anonymous responses
       </label>
@@ -117,13 +126,13 @@ export default function SurveyForm({ initialValues, onSubmit, onCancel, submitLa
         onChange={(questions) => setValues((current) => ({ ...current, questions }))}
       />
 
-      <button
+      <EnterpriseButton
         type="submit"
         disabled={isSubmitting}
-        className="inline-flex items-center rounded-lg bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-70"
+        variant="primary"
       >
         {isSubmitting ? "Submitting..." : submitLabel}
-      </button>
+      </EnterpriseButton>
     </form>
   );
 }

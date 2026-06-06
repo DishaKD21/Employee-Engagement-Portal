@@ -1,8 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { Checkbox } from "@mantine/core";
 import { CheckCircle2, Clock3, MessageSquareReply, Search } from "lucide-react";
 import { fetchAllEscalations, respondToEscalation, type QueryEscalationEntry } from "@/lib/api-client";
+import { DataViewport, EmptyState, EnterpriseBadge, EnterpriseButton, EnterpriseCard, EnterpriseTextarea, MetricCard, PaginationBar, SectionHeader } from "@/components/ui/enterprise";
+import { useClientPagination } from "@/hooks/useClientPagination";
+import { useRowSelection } from "@/hooks/useRowSelection";
 
 type TabKey = "pending" | "resolved";
 
@@ -44,6 +48,8 @@ export default function QueryEscalationDashboardView() {
   const filtered = useMemo(() => {
     return escalations.filter((item) => (activeTab === "resolved" ? item.status === "resolved" : item.status !== "resolved"));
   }, [activeTab, escalations]);
+  const pagination = useClientPagination(filtered);
+  const selection = useRowSelection(pagination.paginatedItems.map((item) => item.id), filtered.map((item) => item.id));
 
   const selected = filtered.find((item) => item.id === selectedId) ?? filtered[0] ?? null;
 
@@ -70,14 +76,22 @@ export default function QueryEscalationDashboardView() {
   };
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
-      <section className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-violet-600">Employee Query Escalations</p>
-        <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">HR response queue</h2>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-          Review low-confidence chatbot questions, respond to employees, and publish the answer back into retrieval.
-        </p>
+    <div className="space-y-6">
+      <SectionHeader
+        eyebrow="Employee Query Escalations"
+        title="HR response queue"
+        description="Review low-confidence chatbot questions, respond to employees, and publish the answer back into retrieval."
+      />
 
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <MetricCard label="Pending" value={String(pendingCount)} helper="Needs HR response" icon={<Clock3 className="h-5 w-5" />} />
+        <MetricCard label="Resolved" value={String(resolvedCount)} helper="Published answers" icon={<CheckCircle2 className="h-5 w-5" />} />
+        <MetricCard label="Queue Size" value={String(escalations.length)} helper="All visible escalations" icon={<Search className="h-5 w-5" />} />
+        <MetricCard label="Active View" value={activeTab === "resolved" ? "Resolved" : "Pending"} helper="Current filter" icon={<MessageSquareReply className="h-5 w-5" />} />
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+      <EnterpriseCard className="p-6">
         <div className="mt-5 inline-flex rounded-2xl border border-slate-200 bg-slate-50 p-1">
           {[
             { key: "pending" as const, label: "Pending", count: pendingCount, icon: Clock3 },
@@ -91,14 +105,15 @@ export default function QueryEscalationDashboardView() {
                 key={tab.key}
                 type="button"
                 onClick={() => setActiveTab(tab.key)}
+
                 className={[
-                  "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition",
-                  active ? "bg-white text-violet-700 shadow-sm" : "text-slate-600 hover:text-slate-900",
+                  "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition",
+                  active ? "bg-white text-blue-700 shadow-sm" : "text-slate-600 hover:text-slate-900",
                 ].join(" ")}
               >
                 <Icon className="h-4 w-4" />
                 {tab.label}
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">{tab.count}</span>
+                <EnterpriseBadge tone={active ? "info" : "neutral"}>{tab.count}</EnterpriseBadge>
               </button>
             );
           })}
@@ -106,14 +121,19 @@ export default function QueryEscalationDashboardView() {
 
         {error ? <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
 
-        <div className="mt-5 space-y-3">
+        <div className="mt-5 flex flex-wrap items-center gap-3 text-sm text-slate-600">
+          <Checkbox checked={selection.allVisibleSelected} indeterminate={selection.someVisibleSelected} onChange={selection.toggleVisible} label="Select all" />
+          <span>{selection.selectedCount} items selected</span>
+          {selection.selectedCount ? <button type="button" className="font-semibold text-blue-700" onClick={selection.clearSelection}>Deselect all</button> : null}
+        </div>
+
+        <DataViewport height={620} className="mt-4">
+        <div className="space-y-3 pr-3">
           {loading ? <p className="text-sm text-slate-500">Loading escalations...</p> : null}
           {!loading && filtered.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
-              No {activeTab} escalations.
-            </div>
+            <EmptyState title={`No ${activeTab} escalations found.`} description="Escalated employee questions matching this view will appear here." />
           ) : null}
-          {filtered.map((item) => {
+          {pagination.paginatedItems.map((item) => {
             const active = item.id === selected?.id;
 
             return (
@@ -122,34 +142,39 @@ export default function QueryEscalationDashboardView() {
                 type="button"
                 onClick={() => setSelectedId(item.id)}
                 className={[
-                  "w-full rounded-2xl border px-4 py-4 text-left transition",
-                  active ? "border-violet-300 bg-violet-50" : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white",
+                  "w-full rounded-xl border px-4 py-4 text-left transition",
+                  active ? "border-blue-300 bg-blue-50" : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50",
                 ].join(" ")}
               >
                 <div className="flex items-start justify-between gap-3">
+                  <Checkbox checked={selection.selectedSet.has(item.id)} onChange={() => selection.toggleOne(item.id)} onClick={(event) => event.stopPropagation()} aria-label={`Select escalation ${item.id}`} />
                   <div className="min-w-0">
                     <p className="line-clamp-2 text-sm font-semibold text-slate-900">{item.query?.queryText ?? "Untitled query"}</p>
                     <p className="mt-1 text-xs text-slate-500">
                       {item.query?.employee?.name ?? "Employee"} - {formatDate(item.query?.createdAt)}
                     </p>
                   </div>
-                  <span className="shrink-0 rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
+                  <EnterpriseBadge tone={item.status === "resolved" ? "resolved" : "pending"} className="shrink-0">
                     {statusLabel(item.status)}
-                  </span>
+                  </EnterpriseBadge>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-500">
-                  <span className="rounded-full bg-white px-3 py-1">
+                  <span className="rounded-full bg-slate-100 px-3 py-1">
                     Confidence: {(Number(item.query?.confidenceScore ?? 0) * 100).toFixed(0)}%
                   </span>
-                  <span className="rounded-full bg-white px-3 py-1">Escalation #{item.id}</span>
+                  <span className="rounded-full bg-slate-100 px-3 py-1">Escalation #{item.id}</span>
                 </div>
               </button>
             );
           })}
         </div>
-      </section>
+        </DataViewport>
+        <div className="mt-4">
+          <PaginationBar {...pagination} onChange={pagination.setPage} onPageSizeChange={pagination.setPageSize} disabled={loading} />
+        </div>
+      </EnterpriseCard>
 
-      <aside className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm xl:sticky xl:top-6 xl:self-start">
+      <EnterpriseCard className="p-6 xl:sticky xl:top-6 xl:self-start">
         <div className="flex items-center gap-2">
           <Search className="h-5 w-5 text-violet-600" />
           <h3 className="text-lg font-semibold text-slate-900">Query details</h3>
@@ -159,17 +184,17 @@ export default function QueryEscalationDashboardView() {
           <div className="mt-5 space-y-5">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Employee query</p>
-              <p className="mt-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-800">
+              <p className="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-800">
                 {selected.query?.queryText}
               </p>
             </div>
 
             <div className="grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-1">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
                 <p className="text-xs text-slate-500">Confidence</p>
                 <p className="mt-1 font-semibold text-slate-900">{(Number(selected.query?.confidenceScore ?? 0) * 100).toFixed(0)}%</p>
               </div>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
                 <p className="text-xs text-slate-500">Escalated</p>
                 <p className="mt-1 font-semibold text-slate-900">{formatDate(selected.query?.createdAt)}</p>
               </div>
@@ -178,35 +203,36 @@ export default function QueryEscalationDashboardView() {
             {selected.status === "resolved" ? (
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">HR response</p>
-                <p className="mt-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-900">
+                <p className="mt-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-900">
                   {selected.resolutionText}
                 </p>
               </div>
             ) : (
               <form onSubmit={onSubmit} className="space-y-3">
                 <label className="block text-sm font-semibold text-slate-900">Respond to employee</label>
-                <textarea
+                <EnterpriseTextarea
                   value={resolutionText}
                   onChange={(event) => setResolutionText(event.target.value)}
                   rows={6}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-violet-400"
                   placeholder="Write the HR-approved answer..."
                 />
-                <button
+                <EnterpriseButton
                   type="submit"
                   disabled={submitting || !resolutionText.trim()}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-violet-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  variant="primary"
+                  className="w-full"
                 >
                   <MessageSquareReply className="h-4 w-4" />
                   {submitting ? "Submitting..." : "Submit response"}
-                </button>
+                </EnterpriseButton>
               </form>
             )}
           </div>
         ) : (
           <p className="mt-5 text-sm text-slate-500">Select an escalation to view details.</p>
         )}
-      </aside>
+      </EnterpriseCard>
+      </div>
     </div>
   );
 }

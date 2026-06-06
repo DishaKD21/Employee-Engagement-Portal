@@ -3,6 +3,7 @@
 import Link from "next/link";
 import React from "react";
 import type { SurveyRecord } from "../services/survey.service";
+import { EnterpriseBadge, EnterpriseButton, EnterpriseCard } from "@/components/ui/enterprise";
 
 type Props = {
   survey: SurveyRecord;
@@ -17,15 +18,15 @@ function formatDate(value?: string | null) {
 
 export default function SurveyCard({ survey, isSubmitted }: Props) {
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <EnterpriseCard className="p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 className="text-lg font-semibold text-slate-900">{survey.title}</h3>
+          <h3 className="text-base font-semibold text-slate-900">{survey.title}</h3>
           <p className="mt-2 text-sm text-slate-600">Target audience: {survey.targetAudience}</p>
         </div>
-        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+        <EnterpriseBadge tone={isSubmitted ? "success" : "warning"}>
           {survey.workflowStatus ?? survey.approvedStatus ?? "pending"}
-        </span>
+        </EnterpriseBadge>
       </div>
 
       <div className="mt-4 grid gap-2 text-sm text-slate-600">
@@ -40,10 +41,10 @@ export default function SurveyCard({ survey, isSubmitted }: Props) {
           }
         }}
         aria-disabled={isSubmitted}
-        className={`mt-5 inline-flex rounded-lg px-4 py-3 text-sm font-semibold text-white ${isSubmitted ? "cursor-not-allowed bg-slate-400" : "bg-slate-900 hover:bg-slate-700"}`}
+        className={`mt-5 inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold ${isSubmitted ? "cursor-not-allowed bg-slate-300 text-slate-500" : "bg-blue-700 text-white hover:bg-blue-800"}`}
       >
         {isSubmitted ? "Submitted" : "Start Survey"}
       </Link>
-    </article>
+    </EnterpriseCard>
   );
 }

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { getDashboardRoute, getErrorMessage } from "../services/auth.helpers";
 import { signupSuperAdmin } from "../services/super-admin-signup.service";
+import { EnterpriseButton, EnterpriseCard, EnterpriseInput, EnterpriseLabel, SectionHeader } from "@/components/ui/enterprise";
 
 const SuperAdminSignupView = () => {
   const router = useRouter();
@@ -65,13 +66,13 @@ const SuperAdminSignupView = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <form className="p-4 max-w-md mx-auto bg-white rounded shadow space-y-4 mt-10" onSubmit={handleSubmit}>
-        <h1 className="text-2xl font-bold text-center">Super Admin Signup</h1>
-        <label className="block text-sm font-medium text-gray-700" htmlFor="name">
-          Full Name:
-        </label>
-        <input
+    <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(30,64,175,0.08),_transparent_34%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_100%)] px-6 py-10">
+      <EnterpriseCard className="w-full max-w-md p-8">
+        <SectionHeader eyebrow="Super Admin Access" title="Super Admin Signup" description="Create the first platform administrator account." />
+        <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+        <div className="space-y-2">
+          <EnterpriseLabel htmlFor="name">Full Name</EnterpriseLabel>
+          <EnterpriseInput
           id="name"
           name="name"
           type="text"
@@ -79,24 +80,22 @@ const SuperAdminSignupView = () => {
           onChange={handleChange}
           required
           placeholder="Full Name"
-          className="block w-full border text-shadow-black border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-        />
-        <label className="block text-sm font-medium text-gray-700" htmlFor="companyName">
-          Company Name:
-        </label>
-        <input
+          />
+        </div>
+        <div className="space-y-2">
+          <EnterpriseLabel htmlFor="companyName">Company Name</EnterpriseLabel>
+          <EnterpriseInput
           id="companyName"
           name="companyName"
           type="text"
           value={formData.companyName}
           onChange={handleChange}
           placeholder="Company Name (optional)"
-          className="block w-full border text-shadow-black border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-        />
-        <label className="block text-sm font-medium text-gray-700" htmlFor="email">
-          Email:
-        </label>
-        <input
+          />
+        </div>
+        <div className="space-y-2">
+          <EnterpriseLabel htmlFor="email">Email</EnterpriseLabel>
+          <EnterpriseInput
           id="email"
           name="email"
           type="email"
@@ -104,12 +103,11 @@ const SuperAdminSignupView = () => {
           onChange={handleChange}
           required
           placeholder="Email"
-          className="block w-full border text-shadow-black border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-        />
-        <label className="block text-sm font-medium text-gray-700" htmlFor="password">
-          Password:
-        </label>
-        <input
+          />
+        </div>
+        <div className="space-y-2">
+          <EnterpriseLabel htmlFor="password">Password</EnterpriseLabel>
+          <EnterpriseInput
           id="password"
           name="password"
           type="password"
@@ -118,17 +116,19 @@ const SuperAdminSignupView = () => {
           required
           minLength={8}
           placeholder="Password"
-          className="block w-full border text-shadow-black border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-        />
-        {errorMessage ? <p className="text-sm text-red-600">{errorMessage}</p> : null}
-        <button
+          />
+        </div>
+        {errorMessage ? <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{errorMessage}</p> : null}
+        <EnterpriseButton
           type="submit"
           disabled={isLoading}
-          className="bg-blue-500 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70 text-white font-bold py-2 px-4 rounded"
+          variant="primary"
+          className="w-full"
         >
           {isLoading ? "Signing up..." : "Signup"}
-        </button>
-      </form>
+        </EnterpriseButton>
+        </form>
+      </EnterpriseCard>
     </div>
   )
 }

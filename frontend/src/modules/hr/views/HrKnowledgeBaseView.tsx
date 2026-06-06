@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import { Checkbox } from "@mantine/core";
 import { useAuthStore } from "@/store/authStore";
 import { getErrorMessage } from "@/modules/auth/services/auth.helpers";
 import {
@@ -9,6 +10,9 @@ import {
   fetchKnowledgeBaseArticles,
   type KnowledgeBaseArticle,
 } from "@/lib/api-client";
+import { DataViewport, EmptyState, EnterpriseBadge, EnterpriseButton, EnterpriseCard, EnterpriseInput, EnterpriseTextarea, PaginationBar, SectionHeader } from "@/components/ui/enterprise";
+import { useClientPagination } from "@/hooks/useClientPagination";
+import { useRowSelection } from "@/hooks/useRowSelection";
 
 export default function HrKnowledgeBaseView() {
   const authUser = useAuthStore((state) => state.user);
@@ -22,6 +26,10 @@ export default function HrKnowledgeBaseView() {
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const approvalPagination = useClientPagination(pendingApprovals);
+  const articlePagination = useClientPagination(articles);
+  const approvalSelection = useRowSelection(approvalPagination.paginatedItems.map((article) => article.articleId), pendingApprovals.map((article) => article.articleId));
+  const articleSelection = useRowSelection(articlePagination.paginatedItems.map((article) => article.articleId), articles.map((article) => article.articleId));
 
   async function loadContent() {
     setIsLoading(true);
@@ -38,7 +46,7 @@ export default function HrKnowledgeBaseView() {
   }
 
   useEffect(() => {
-    void loadContent();
+    void loadContent(); // eslint-disable-line react-hooks/set-state-in-effect
   }, []);
 
   const resetForm = () => {
@@ -84,110 +92,96 @@ export default function HrKnowledgeBaseView() {
   };
 
   return (
-    <section className="space-y-6 rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm">
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-violet-600">HR Content Studio</p>
-        <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Policy creation and approval queue</h2>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-          Draft policy articles here, save them for later, or submit them for approval before the AI indexing workflow picks them up.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <SectionHeader
+        eyebrow="HR Content Studio"
+        title="Policy creation and approval queue"
+        description="Draft policy articles here, save them for later, or submit them for approval before the AI indexing workflow picks them up."
+      />
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+        <EnterpriseCard className="p-4">
           <h3 className="text-sm font-semibold text-slate-900">Draft form</h3>
           <p className="mt-1 text-sm text-slate-600">Use the same endpoint for draft saves and approval submission.</p>
 
           <form onSubmit={handleSubmit} className="mt-4 grid gap-3 sm:grid-cols-2">
-            <input
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
-              placeholder="Policy title"
-            />
-            <input
-              value={category}
-              onChange={(event) => setCategory(event.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
-              placeholder="Category"
-            />
-            <input
-              value={roleTag}
-              onChange={(event) => setRoleTag(event.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm sm:col-span-2"
-              placeholder="Role tag"
-            />
-            <textarea
-              value={content}
-              onChange={(event) => setContent(event.target.value)}
-              className="min-h-40 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm sm:col-span-2"
-              placeholder="Policy content"
-            />
+            <EnterpriseInput value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Policy title" />
+            <EnterpriseInput value={category} onChange={(event) => setCategory(event.target.value)} placeholder="Category" />
+            <EnterpriseInput value={roleTag} onChange={(event) => setRoleTag(event.target.value)} className="sm:col-span-2" placeholder="Role tag" />
+            <EnterpriseTextarea value={content} onChange={(event) => setContent(event.target.value)} className="min-h-40 sm:col-span-2" placeholder="Policy content" />
 
-            {message ? <p className="sm:col-span-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</p> : null}
-            {errorMessage ? <p className="sm:col-span-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{errorMessage}</p> : null}
+            {message ? <p className="sm:col-span-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</p> : null}
+            {errorMessage ? <p className="sm:col-span-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{errorMessage}</p> : null}
 
             <div className="sm:col-span-2 flex flex-wrap gap-3 pt-1">
-              <button
-                type="button"
-                disabled={isSaving || !title.trim() || !content.trim()}
-                onClick={() => void persistArticle("draft")}
-                className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
-              >
+              <EnterpriseButton type="button" disabled={isSaving || !title.trim() || !content.trim()} onClick={() => void persistArticle("draft")} variant="secondary">
                 {isSaving ? "Saving..." : "Save Draft"}
-              </button>
-              <button
-                type="submit"
-                disabled={isSaving || !title.trim() || !content.trim()}
-                className="rounded-full bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
+              </EnterpriseButton>
+              <EnterpriseButton type="submit" disabled={isSaving || !title.trim() || !content.trim()} variant="primary">
                 {isSaving ? "Submitting..." : "Submit For Approval"}
-              </button>
+              </EnterpriseButton>
             </div>
           </form>
-        </div>
+        </EnterpriseCard>
 
-        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+        <EnterpriseCard className="p-4">
           <h3 className="text-sm font-semibold text-slate-900">Approval queue</h3>
-          <div className="mt-4 space-y-3">
-            {isLoading ? <p className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-4 text-sm text-slate-500">Loading knowledge base approvals...</p> : null}
-            {pendingApprovals.map((article) => (
-              <div key={article.articleId} className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
+          <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-slate-600">
+            <Checkbox checked={approvalSelection.allVisibleSelected} indeterminate={approvalSelection.someVisibleSelected} onChange={approvalSelection.toggleVisible} label="Select all" />
+            <span>{approvalSelection.selectedCount} items selected</span>
+            {approvalSelection.selectedCount ? <button type="button" className="font-semibold text-blue-700" onClick={approvalSelection.clearSelection}>Deselect all</button> : null}
+          </div>
+          <DataViewport height={520} className="mt-4">
+          <div className="space-y-3 pr-3">
+            {isLoading ? <p className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-4 text-sm text-slate-500">Loading knowledge base approvals...</p> : null}
+            {approvalPagination.paginatedItems.map((article) => (
+              <div key={article.articleId} className="rounded-xl border border-slate-200 bg-white px-4 py-4">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-sm font-semibold text-slate-900">{article.title}</p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {article.category ?? "Uncategorized"} • {article.writer?.name ?? "Unknown author"}
-                    </p>
+                    <p className="mt-1 text-xs text-slate-500">{article.category ?? "Uncategorized"} • {article.writer?.name ?? "Unknown author"}</p>
                   </div>
-                  <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
-                    {article.status ?? "pending"}
-                  </span>
+                  <EnterpriseBadge tone="pending">{article.status ?? "pending"}</EnterpriseBadge>
                 </div>
               </div>
             ))}
+            {!isLoading && !pendingApprovals.length ? <EmptyState title="No policies found." description="Policy drafts awaiting approval will appear here." /> : null}
           </div>
-        </div>
+          </DataViewport>
+          <div className="mt-4">
+            <PaginationBar {...approvalPagination} onChange={approvalPagination.setPage} onPageSizeChange={approvalPagination.setPageSize} disabled={isLoading} />
+          </div>
+        </EnterpriseCard>
       </div>
 
-      <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+      <EnterpriseCard className="p-4">
         <h3 className="text-sm font-semibold text-slate-900">Article inventory</h3>
-        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {isLoading ? <p className="md:col-span-2 xl:col-span-3 rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-4 text-sm text-slate-500">Loading knowledge base articles...</p> : null}
-          {articles.map((article) => (
-            <div key={article.articleId} className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
+        <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-slate-600">
+          <Checkbox checked={articleSelection.allVisibleSelected} indeterminate={articleSelection.someVisibleSelected} onChange={articleSelection.toggleVisible} label="Select all" />
+          <span>{articleSelection.selectedCount} items selected</span>
+          {articleSelection.selectedCount ? <button type="button" className="font-semibold text-blue-700" onClick={articleSelection.clearSelection}>Deselect all</button> : null}
+        </div>
+        <DataViewport height={620} className="mt-4">
+        <div className="grid gap-3 pr-3 md:grid-cols-2 xl:grid-cols-3">
+          {isLoading ? <p className="md:col-span-2 xl:col-span-3 rounded-xl border border-dashed border-slate-300 bg-white px-4 py-4 text-sm text-slate-500">Loading knowledge base articles...</p> : null}
+          {articlePagination.paginatedItems.map((article) => (
+            <div key={article.articleId} className="rounded-xl border border-slate-200 bg-white px-4 py-4">
+              <Checkbox checked={articleSelection.selectedSet.has(article.articleId)} onChange={() => articleSelection.toggleOne(article.articleId)} aria-label={`Select ${article.title ?? "article"}`} className="mb-3" />
               <p className="text-sm font-semibold text-slate-900">{article.title}</p>
-              <p className="mt-1 text-xs text-slate-500">
-                {article.category ?? "Uncategorized"} • {article.writer?.name ?? "Unknown author"}
-              </p>
+              <p className="mt-1 text-xs text-slate-500">{article.category ?? "Uncategorized"} • {article.writer?.name ?? "Unknown author"}</p>
               <p className="mt-3 text-sm text-slate-600">
                 {article.content?.slice(0, 120)}
                 {article.content && article.content.length > 120 ? "..." : ""}
               </p>
             </div>
           ))}
+          {!isLoading && !articles.length ? <div className="md:col-span-2 xl:col-span-3"><EmptyState title="No policies found." description="Published knowledge base articles will appear here." /></div> : null}
         </div>
-      </div>
-    </section>
+        </DataViewport>
+        <div className="mt-4">
+          <PaginationBar {...articlePagination} onChange={articlePagination.setPage} onPageSizeChange={articlePagination.setPageSize} disabled={isLoading} />
+        </div>
+      </EnterpriseCard>
+    </div>
   );
 }

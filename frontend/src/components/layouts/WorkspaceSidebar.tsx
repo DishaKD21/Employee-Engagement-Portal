@@ -15,6 +15,7 @@ import {
   CalendarDays,
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
+import { EnterpriseBadge } from "@/components/ui/enterprise";
 
 type SidebarIcon = typeof LayoutGrid;
 
@@ -98,10 +99,10 @@ export function WorkspaceSidebar({ role }: WorkspaceSidebarProps) {
   const config = sidebarConfig[role];
 
   return (
-    <aside className="flex h-full w-full flex-col border-r border-slate-200 bg-slate-50/95 px-4 py-5 backdrop-blur xl:px-5">
-      <div className="rounded-3xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
+    <aside className="flex h-full w-full flex-col bg-white px-4 py-5 xl:px-5">
+      <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-600 text-white shadow-lg shadow-violet-200/70">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-700 text-white shadow-sm">
             <Sparkles className="h-5 w-5" />
           </div>
           <div>
@@ -111,7 +112,7 @@ export function WorkspaceSidebar({ role }: WorkspaceSidebarProps) {
         </div>
       </div>
 
-      <nav className="mt-6 flex-1 space-y-6 overflow-y-auto pr-1">
+      <nav className="enterprise-scrollbar mt-6 flex-1 space-y-6 overflow-y-auto pr-1">
         {config.sections.map((section) => (
           <div key={section.heading}>
             <p className="px-3 text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
@@ -129,17 +130,17 @@ export function WorkspaceSidebar({ role }: WorkspaceSidebarProps) {
                     href={item.href}
                     aria-current={active ? "page" : undefined}
                     className={[
-                      "group flex items-center justify-between rounded-2xl px-3 py-3 text-sm font-medium transition-all",
+                        "group flex items-center justify-between rounded-xl px-3 py-3 text-sm font-medium transition-all",
                       active
-                        ? "bg-violet-600 text-white shadow-lg shadow-violet-200"
-                        : "text-slate-700 hover:bg-slate-100 hover:text-slate-950",
+                          ? "bg-blue-700 text-white shadow-sm"
+                          : "text-slate-700 hover:bg-slate-100 hover:text-slate-950",
                     ].join(" ")}
                   >
                     <span className="flex min-w-0 items-center gap-3">
                       <span
                         className={[
-                          "flex h-10 w-10 items-center justify-center rounded-xl transition-colors",
-                          active ? "bg-white/15 text-white" : "bg-slate-100 text-slate-500 group-hover:bg-white",
+                            "flex h-10 w-10 items-center justify-center rounded-lg transition-colors",
+                            active ? "bg-white/15 text-white" : "bg-slate-100 text-slate-500 group-hover:bg-white",
                         ].join(" ")}
                       >
                         <Icon className="h-4.5 w-4.5" />
@@ -156,9 +157,9 @@ export function WorkspaceSidebar({ role }: WorkspaceSidebarProps) {
         ))}
       </nav>
 
-      <div className="mt-6 rounded-3xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
+      <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-violet-50 text-violet-700">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
             <ShieldCheck className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
@@ -169,6 +170,10 @@ export function WorkspaceSidebar({ role }: WorkspaceSidebarProps) {
               {role === "hr" ? "HR workspace" : role === "hr-manager" ? "HR manager workspace" : "Employee workspace"}
             </p>
           </div>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <EnterpriseBadge tone="info">Active workspace</EnterpriseBadge>
+          <EnterpriseBadge tone="neutral">Secure access</EnterpriseBadge>
         </div>
       </div>
     </aside>

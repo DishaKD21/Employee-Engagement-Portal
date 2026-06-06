@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { getDashboardRoute, getErrorMessage } from "../services/auth.helpers";
 import { loginSuperAdmin } from "../services/super-admin-login.service";
+import { EnterpriseButton, EnterpriseCard, EnterpriseInput, EnterpriseLabel, SectionHeader } from "@/components/ui/enterprise";
 
 const SuperAdminLoginView = () => {
   const router = useRouter();
@@ -43,13 +44,13 @@ const SuperAdminLoginView = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-      <form className="w-full max-w-md p-8 bg-white rounded shadow" onSubmit={handleSubmit}>
-        <h1 className="text-2xl font-bold text-center">Super Admin Login</h1>
-        <label className="block text-sm font-medium text-gray-700" htmlFor="email">
-          Email:
-        </label>
-        <input
+    <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(30,64,175,0.08),_transparent_34%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_100%)] px-6 py-10">
+      <EnterpriseCard className="w-full max-w-md p-8">
+        <SectionHeader eyebrow="Super Admin Access" title="Super Admin Login" description="Sign in to administer the platform." />
+        <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+        <div className="space-y-2">
+          <EnterpriseLabel htmlFor="email">Email</EnterpriseLabel>
+          <EnterpriseInput
           id="email"
           name="email"
           type="email"
@@ -57,12 +58,11 @@ const SuperAdminLoginView = () => {
           onChange={(event) => setEmail(event.target.value)}
           required
           placeholder="email"
-          className="block w-full border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-        />
-        <label className="block text-sm font-medium text-gray-700" htmlFor="password">
-          Password:
-        </label>
-        <input
+          />
+        </div>
+        <div className="space-y-2">
+          <EnterpriseLabel htmlFor="password">Password</EnterpriseLabel>
+          <EnterpriseInput
           id="password"
           name="password"
           type="password"
@@ -71,17 +71,19 @@ const SuperAdminLoginView = () => {
           required
           minLength={8}
           placeholder="Password"
-          className="block w-full border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-        />
-        {errorMessage ? <p className="mt-3 text-sm text-red-600">{errorMessage}</p> : null}
-        <button
+          />
+        </div>
+        {errorMessage ? <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{errorMessage}</p> : null}
+        <EnterpriseButton
           type="submit"
           disabled={isLoading}
-          className="mt-4 bg-blue-500 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70 text-white font-bold py-2 px-4 rounded"
+          variant="primary"
+          className="mt-2 w-full"
         >
           {isLoading ? "Logging in..." : "Login"}
-        </button>
-      </form>
+        </EnterpriseButton>
+        </form>
+      </EnterpriseCard>
     </div>
   )
 }

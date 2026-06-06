@@ -43,8 +43,6 @@ def query_route(payload: QueryRequest, db: Session = Depends(get_db)):
         logger.info("RAG query returned no chunk match | query=%r", payload.query_text)
         return QueryResponse(answer=None, confidence=0.0, matched_article_id=None, escalate=True)
 
-    answer = generate_answer(payload.query_text, best_chunk)
-
     logger.info(
         "BEFORE_CONFIDENCE_CHECK | query=%r | article_id=%s | threshold=%s",
         payload.query_text,
@@ -81,6 +79,19 @@ def query_route(payload: QueryRequest, db: Session = Depends(get_db)):
             settings.confidence_threshold,
         )
         return QueryResponse(answer=None, confidence=confidence, matched_article_id=None, escalate=True)
+
+    logger.info(
+        "BEFORE_OLLAMA | query=%r | confidence=%s | article_id=%s",
+        payload.query_text,
+        confidence,
+        best_chunk.article_id,
+    )
+    answer = generate_answer(payload.query_text, best_chunk)
+    logger.info(
+        "AFTER_OLLAMA | query=%r | has_answer=%s",
+        payload.query_text,
+        bool(answer),
+    )
 
     response = QueryResponse(
         answer=answer,

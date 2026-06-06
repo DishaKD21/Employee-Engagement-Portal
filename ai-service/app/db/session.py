@@ -2,7 +2,8 @@ import logging
 import os
 import re
 
-from sqlalchemy import create_engine, text
+from pgvector.psycopg import register_vector
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import declarative_base, sessionmaker
 
@@ -26,8 +27,19 @@ logger.info(
 def get_database_schema() -> str:
     return os.getenv("DB_SCHEMA", "ethan")
 
+
 engine_url = re.sub(r"^postgresql:", "postgresql+psycopg:", database_url, count=1)
-engine = create_engine(engine_url, pool_pre_ping=True)
+database_schema = get_database_schema()
+engine = create_engine(
+    engine_url,
+    pool_pre_ping=True,
+    connect_args={"options": f"-c search_path={database_schema},public"},
+)
+
+
+@event.listens_for(engine, "connect")
+def configure_connection(dbapi_connection, connection_record) -> None:
+    register_vector(dbapi_connection)
 
 
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)

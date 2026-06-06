@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import type { EventFormValues } from "../services/event.service";
+import { EnterpriseButton, EnterpriseHelperText, EnterpriseInput, EnterpriseLabel, EnterpriseTextarea } from "@/components/ui/enterprise";
 
 type Props = {
   initialValues?: Partial<EventFormValues>;
@@ -46,33 +47,54 @@ export default function EventForm({ initialValues, onSubmit, onCancel, submitLab
   };
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-slate-900">{title ?? "Event Form"}</h2>
-          <p className="text-sm text-slate-500">Submit the event for HR Manager approval.</p>
+          <h2 className="text-lg font-semibold text-slate-900">{title ?? "Event Form"}</h2>
+          <EnterpriseHelperText>Submit the event for HR Manager approval.</EnterpriseHelperText>
         </div>
         {onCancel ? (
-          <button type="button" onClick={onCancel} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+          <EnterpriseButton type="button" variant="secondary" onClick={onCancel}>
             Cancel
-          </button>
+          </EnterpriseButton>
         ) : null}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <input name="event_name" value={values.event_name} onChange={handleChange} placeholder="Event name" required className="rounded-lg border border-slate-300 px-4 py-3 text-sm" />
-        <input name="event_type" value={values.event_type} onChange={handleChange} placeholder="Event type" required className="rounded-lg border border-slate-300 px-4 py-3 text-sm" />
-        <input name="target_audience" value={values.target_audience} onChange={handleChange} placeholder="Target audience" required className="rounded-lg border border-slate-300 px-4 py-3 text-sm md:col-span-2" />
-        <input name="registration_start" type="date" value={values.registration_start} onChange={handleChange} required className="rounded-lg border border-slate-300 px-4 py-3 text-sm" />
-        <input name="registration_end" type="date" value={values.registration_end} onChange={handleChange} required className="rounded-lg border border-slate-300 px-4 py-3 text-sm" />
-        <input name="event_date" type="date" value={values.event_date} onChange={handleChange} required className="rounded-lg border border-slate-300 px-4 py-3 text-sm" />
+        <div className="space-y-2">
+          <EnterpriseLabel>Event name</EnterpriseLabel>
+          <EnterpriseInput name="event_name" value={values.event_name} onChange={handleChange} placeholder="Event name" required />
+        </div>
+        <div className="space-y-2">
+          <EnterpriseLabel>Event type</EnterpriseLabel>
+          <EnterpriseInput name="event_type" value={values.event_type} onChange={handleChange} placeholder="Event type" required />
+        </div>
+        <div className="space-y-2 md:col-span-2">
+          <EnterpriseLabel>Target audience</EnterpriseLabel>
+          <EnterpriseInput name="target_audience" value={values.target_audience} onChange={handleChange} placeholder="Target audience" required />
+        </div>
+        <div className="space-y-2">
+          <EnterpriseLabel>Registration start</EnterpriseLabel>
+          <EnterpriseInput name="registration_start" type="date" value={values.registration_start} onChange={handleChange} required />
+        </div>
+        <div className="space-y-2">
+          <EnterpriseLabel>Registration end</EnterpriseLabel>
+          <EnterpriseInput name="registration_end" type="date" value={values.registration_end} onChange={handleChange} required />
+        </div>
+        <div className="space-y-2">
+          <EnterpriseLabel>Event date</EnterpriseLabel>
+          <EnterpriseInput name="event_date" type="date" value={values.event_date} onChange={handleChange} required />
+        </div>
       </div>
 
-      <textarea name="description" value={values.description} onChange={handleChange} placeholder="Description" rows={4} className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm" />
+      <div className="space-y-2">
+        <EnterpriseLabel>Description</EnterpriseLabel>
+        <EnterpriseTextarea name="description" value={values.description} onChange={handleChange} placeholder="Description" rows={4} />
+      </div>
 
-      <button type="submit" disabled={isSubmitting} className="inline-flex items-center rounded-lg bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-70">
+      <EnterpriseButton type="submit" disabled={isSubmitting} variant="primary">
         {isSubmitting ? "Submitting..." : submitLabel}
-      </button>
+      </EnterpriseButton>
     </form>
   );
 }

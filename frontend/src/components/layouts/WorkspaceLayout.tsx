@@ -92,16 +92,16 @@ export function WorkspaceLayout({ role, children }: WorkspaceLayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100">
-      <div className="grid min-h-screen lg:grid-cols-[300px_1fr]">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(30,64,175,0.07),_transparent_28%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_100%)]">
+      <div className="grid min-h-screen lg:grid-cols-[280px_1fr]">
         <div className="border-b border-slate-200 bg-white lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r">
           <WorkspaceSidebar role={role} />
         </div>
 
         <div className="flex min-h-screen min-w-0 flex-col">
           <WorkspaceHeader title={meta.title} description={meta.description} />
-          <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
-            <div className="mx-auto w-full max-w-7xl">{children}</div>
+          <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+            <div className="mx-auto w-full max-w-[1440px]">{children}</div>
           </main>
         </div>
       </div>

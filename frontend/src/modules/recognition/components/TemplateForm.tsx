@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import type { RecognitionTemplateFormValues } from "../services/recognition.service";
+import { EnterpriseButton, EnterpriseHelperText, EnterpriseInput, EnterpriseLabel, EnterpriseSelect, EnterpriseTextarea } from "@/components/ui/enterprise";
 
 type Props = {
   initialValues?: Partial<RecognitionTemplateFormValues>;
@@ -29,7 +30,7 @@ export default function TemplateForm({ initialValues, onSubmit, onCancel, submit
   const [values, setValues] = useState<RecognitionTemplateFormValues>(toFormValues(initialValues));
 
   useEffect(() => {
-    setValues(toFormValues(initialValues));
+    setValues(toFormValues(initialValues)); // eslint-disable-line react-hooks/set-state-in-effect
   }, [initialValues]);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -47,47 +48,48 @@ export default function TemplateForm({ initialValues, onSubmit, onCancel, submit
   };
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-slate-900">{title ?? "Recognition Template"}</h2>
-          <p className="text-sm text-slate-500">Create a recognition template and submit it for HR Manager approval.</p>
+          <h2 className="text-lg font-semibold text-slate-900">{title ?? "Recognition Template"}</h2>
+          <EnterpriseHelperText>Create a recognition template and submit it for HR Manager approval.</EnterpriseHelperText>
         </div>
         {onCancel ? (
-          <button type="button" onClick={onCancel} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+          <EnterpriseButton type="button" variant="secondary" onClick={onCancel}>
             Cancel
-          </button>
+          </EnterpriseButton>
         ) : null}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <input
-          name="template_name"
-          value={values.template_name}
-          onChange={handleChange}
-          placeholder="Template name"
-          required
-          className="rounded-lg border border-slate-300 px-4 py-3 text-sm"
-        />
-        <select name="event_type" value={values.event_type} onChange={handleChange} required className="rounded-lg border border-slate-300 px-4 py-3 text-sm">
-          <option value="BIRTHDAY">Birthday</option>
-          <option value="WORK_ANNIVERSARY">Work Anniversary</option>
-        </select>
+        <div className="space-y-2">
+          <EnterpriseLabel>Template name</EnterpriseLabel>
+          <EnterpriseInput name="template_name" value={values.template_name} onChange={handleChange} placeholder="Template name" required />
+        </div>
+        <div className="space-y-2">
+          <EnterpriseLabel>Event type</EnterpriseLabel>
+          <EnterpriseSelect name="event_type" value={values.event_type} onChange={handleChange} required>
+            <option value="BIRTHDAY">Birthday</option>
+            <option value="WORK_ANNIVERSARY">Work Anniversary</option>
+          </EnterpriseSelect>
+        </div>
       </div>
 
-      <textarea
+      <div className="space-y-2">
+        <EnterpriseLabel>Template content</EnterpriseLabel>
+        <EnterpriseTextarea
         name="content"
         value={values.content}
         onChange={handleChange}
         placeholder="Template content with placeholders like {{employee_name}} and {{years}}"
         rows={6}
         required
-        className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm"
-      />
+        />
+      </div>
 
-      <button type="submit" disabled={isSubmitting} className="inline-flex items-center rounded-lg bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-70">
+      <EnterpriseButton type="submit" disabled={isSubmitting} variant="primary">
         {isSubmitting ? "Submitting..." : submitLabel}
-      </button>
+      </EnterpriseButton>
     </form>
   );
 }
