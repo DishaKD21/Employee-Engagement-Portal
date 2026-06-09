@@ -33,6 +33,22 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      const isLoginRequest = error.config?.url?.includes("/login");
+      if (!isLoginRequest) {
+        useAuthStore.getState().logout();
+        if (typeof window !== "undefined") {
+          window.location.href = "/employee/login?expired=true";
+        }
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export type KnowledgeBaseArticle = {
   articleId: number;
   title: string | null;
