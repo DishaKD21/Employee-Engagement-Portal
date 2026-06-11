@@ -17,6 +17,7 @@ class Settings:
     max_chunks_per_article: int = int(getenv("MAX_CHUNKS_PER_ARTICLE", "16"))
     chunk_size_chars: int = int(getenv("CHUNK_SIZE_CHARS", "1200"))
     chunk_overlap_chars: int = int(getenv("CHUNK_OVERLAP_CHARS", "150"))
+    ai_service_enabled: bool = getenv("AI_SERVICE_ENABLED", "true").lower() in ("true", "1", "yes")
 
 
 settings = Settings()

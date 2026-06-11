@@ -90,6 +90,8 @@ export const chatbotService = {
 				confidence: 0,
 				matched_article_id: null,
 				escalate: true,
+				ai_enabled: false,
+				source: "fallback",
 			};
 		}
 
@@ -162,6 +164,8 @@ export const chatbotService = {
 				: undefined,
 			queryId: queryLog.queryId,
 			escalationId,
+			aiEnabled: aiResponse.ai_enabled ?? true,
+			source: aiResponse.source ?? "ai",
 		};
 	},
 

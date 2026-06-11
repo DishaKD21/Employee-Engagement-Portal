@@ -14,97 +14,129 @@ logger = logging.getLogger("ai-service")
 
 @router.post("/index-article", response_model=IndexArticleResponse)
 def index_article_route(payload: IndexArticleRequest, db: Session = Depends(get_db)):
-    logger.info(
-        "Index article request received",
-        extra={"article_id": payload.article_id, "version": payload.version, "category": payload.category, "role_tag": payload.role_tag},
-    )
-    chunk_count = index_article(
-        db,
-        article_id=payload.article_id,
-        title=payload.title,
-        content=payload.content,
-        category=payload.category,
-        role_tag=payload.role_tag,
-        version=payload.version,
-        status=payload.status,
-    )
+    if not settings.ai_service_enabled:
+        logger.info("Index article skipped (AI_SERVICE_ENABLED=false)", extra={"article_id": payload.article_id})
+        return IndexArticleResponse(indexed=False, articleId=payload.article_id, status="mocked", chunkCount=0)
 
-    logger.info("Index article request completed", extra={"article_id": payload.article_id, "chunk_count": chunk_count})
+    try:
+        logger.info(
+            "Index article request received",
+            extra={"article_id": payload.article_id, "version": payload.version, "category": payload.category, "role_tag": payload.role_tag},
+        )
+        chunk_count = index_article(
+            db,
+            article_id=payload.article_id,
+            title=payload.title,
+            content=payload.content,
+            category=payload.category,
+            role_tag=payload.role_tag,
+            version=payload.version,
+            status=payload.status,
+        )
 
-    return IndexArticleResponse(indexed=True, articleId=payload.article_id, status="indexed", chunkCount=chunk_count)
+        logger.info("Index article request completed", extra={"article_id": payload.article_id, "chunk_count": chunk_count})
+
+        return IndexArticleResponse(indexed=True, articleId=payload.article_id, status="indexed", chunkCount=chunk_count)
+    except Exception as e:
+        logger.exception("Failed to index knowledge base article", extra={"article_id": payload.article_id})
+        return IndexArticleResponse(indexed=False, articleId=payload.article_id, status="fallback", chunkCount=0)
 
 
 @router.post("/query", response_model=QueryResponse)
 def query_route(payload: QueryRequest, db: Session = Depends(get_db)):
-    logger.info("RAG query request received | query=%r", payload.query_text)
-    best_chunk = retrieve_best_chunk(db, payload.query_text)
+    if not settings.ai_service_enabled:
+        logger.info("RAG query skipped (AI_SERVICE_ENABLED=false) | query=%r", payload.query_text)
+        return QueryResponse(
+            answer="AI service is currently unavailable in this deployment environment.",
+            confidence=0.0,
+            matched_article_id=None,
+            escalate=False,
+            ai_enabled=False,
+            source="mock",
+        )
 
-    if best_chunk is None:
-        logger.info("RAG query returned no chunk match | query=%r", payload.query_text)
-        return QueryResponse(answer=None, confidence=0.0, matched_article_id=None, escalate=True)
+    try:
+        logger.info("RAG query request received | query=%r", payload.query_text)
+        best_chunk = retrieve_best_chunk(db, payload.query_text)
 
-    logger.info(
-        "BEFORE_CONFIDENCE_CHECK | query=%r | article_id=%s | threshold=%s",
-        payload.query_text,
-        best_chunk.article_id,
-        settings.confidence_threshold,
-    )
-    confidence = score_confidence(payload.query_text, best_chunk)
-    logger.info(
-        "RAG query confidence computed | query=%r | final_confidence=%s | article_id=%s",
-        payload.query_text,
-        confidence,
-        best_chunk.article_id,
-    )
-    logger.info(
-        "AFTER_CONFIDENCE_CHECK | query=%r | confidence=%s | threshold=%s | pass=%s",
-        payload.query_text,
-        confidence,
-        settings.confidence_threshold,
-        confidence >= settings.confidence_threshold,
-    )
+        if best_chunk is None:
+            logger.info("RAG query returned no chunk match | query=%r", payload.query_text)
+            return QueryResponse(answer=None, confidence=0.0, matched_article_id=None, escalate=True)
 
-    if confidence < settings.confidence_threshold:
         logger.info(
-            "RAG query confidence below threshold | query=%r | confidence=%s | threshold=%s | article_id=%s",
+            "BEFORE_CONFIDENCE_CHECK | query=%r | article_id=%s | threshold=%s",
+            payload.query_text,
+            best_chunk.article_id,
+            settings.confidence_threshold,
+        )
+        confidence = score_confidence(payload.query_text, best_chunk)
+        logger.info(
+            "RAG query confidence computed | query=%r | final_confidence=%s | article_id=%s",
             payload.query_text,
             confidence,
-            settings.confidence_threshold,
             best_chunk.article_id,
         )
         logger.info(
-            "RAG: Ollama skipped due confidence threshold | query=%r | confidence=%s | threshold=%s",
+            "AFTER_CONFIDENCE_CHECK | query=%r | confidence=%s | threshold=%s | pass=%s",
             payload.query_text,
             confidence,
             settings.confidence_threshold,
+            confidence >= settings.confidence_threshold,
         )
-        return QueryResponse(answer=None, confidence=confidence, matched_article_id=None, escalate=True)
 
-    logger.info(
-        "BEFORE_OLLAMA | query=%r | confidence=%s | article_id=%s",
-        payload.query_text,
-        confidence,
-        best_chunk.article_id,
-    )
-    answer = generate_answer(payload.query_text, best_chunk)
-    logger.info(
-        "AFTER_OLLAMA | query=%r | has_answer=%s",
-        payload.query_text,
-        bool(answer),
-    )
+        if confidence < settings.confidence_threshold:
+            logger.info(
+                "RAG query confidence below threshold | query=%r | confidence=%s | threshold=%s | article_id=%s",
+                payload.query_text,
+                confidence,
+                settings.confidence_threshold,
+                best_chunk.article_id,
+            )
+            logger.info(
+                "RAG: Ollama skipped due confidence threshold | query=%r | confidence=%s | threshold=%s",
+                payload.query_text,
+                confidence,
+                settings.confidence_threshold,
+            )
+            return QueryResponse(answer=None, confidence=confidence, matched_article_id=None, escalate=True)
 
-    response = QueryResponse(
-        answer=answer,
-        confidence=confidence,
-        matched_article_id=best_chunk.article_id,
-        escalate=False,
-    )
+        logger.info(
+            "BEFORE_OLLAMA | query=%r | confidence=%s | article_id=%s",
+            payload.query_text,
+            confidence,
+            best_chunk.article_id,
+        )
+        answer = generate_answer(payload.query_text, best_chunk)
+        logger.info(
+            "AFTER_OLLAMA | query=%r | has_answer=%s",
+            payload.query_text,
+            bool(answer),
+        )
 
-    logger.info(
-        "RAG query completed | query=%r | confidence=%s | article_id=%s",
-        payload.query_text,
-        confidence,
-        best_chunk.article_id,
-    )
+        response = QueryResponse(
+            answer=answer,
+            confidence=confidence,
+            matched_article_id=best_chunk.article_id,
+            escalate=False,
+            ai_enabled=True,
+            source="ai",
+        )
 
-    return response
+        logger.info(
+            "RAG query completed | query=%r | confidence=%s | article_id=%s",
+            payload.query_text,
+            confidence,
+            best_chunk.article_id,
+        )
+
+        return response
+    except Exception as e:
+        logger.exception("AI query execution failed")
+        return QueryResponse(
+            answer="AI service is currently unavailable.",
+            confidence=0.0,
+            matched_article_id=None,
+            escalate=False,
+            ai_enabled=False,
+            source="fallback",
+        )

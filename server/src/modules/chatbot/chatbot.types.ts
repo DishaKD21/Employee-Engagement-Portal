@@ -12,6 +12,8 @@ export type ChatbotQueryResponse = {
 	message?: string;
 	queryId: number;
 	escalationId: number | null;
+	aiEnabled?: boolean;
+	source?: string;
 };
 
 export type AIServiceQueryResponse = {
@@ -19,6 +21,8 @@ export type AIServiceQueryResponse = {
 	confidence: number;
 	matched_article_id: number | null;
 	escalate: boolean;
+	ai_enabled?: boolean;
+	source?: string;
 };
 
 export type KnowledgeBaseArticleInput = {

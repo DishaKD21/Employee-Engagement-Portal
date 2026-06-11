@@ -108,17 +108,31 @@ export default function EmployeeKnowledgeBaseView() {
 
           {response ? (
             <EnterpriseCard className="mt-4 p-4">
-              <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                {response.escalate ? <ShieldAlert className="h-4.5 w-4.5 text-amber-600" /> : <Sparkles className="h-4.5 w-4.5 text-emerald-600" />}
-                {response.escalate ? "Escalation created" : "AI answer"}
-              </div>
-              <p className="mt-2 text-sm leading-6 text-slate-700">
-                {response.answer ?? response.message ?? "Your query has been escalated to HR. You will receive a response shortly."}
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-500">
-                <EnterpriseBadge tone="info">Confidence: {(response.confidence * 100).toFixed(0)}%</EnterpriseBadge>
-                <EnterpriseBadge tone={response.escalate ? "warning" : "success"}>Escalation: {response.escalate ? "yes" : "no"}</EnterpriseBadge>
-              </div>
+              {response.aiEnabled === false || response.source === "mock" || response.source === "fallback" || response.answer === "AI service is currently unavailable in this deployment environment." || response.answer === "AI service is currently unavailable." ? (
+                <>
+                  <div className="flex items-center gap-2 text-sm font-semibold text-amber-800">
+                    <ShieldAlert className="h-4.5 w-4.5 text-amber-600" />
+                    AI Assistant Unavailable
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    AI Assistant is currently unavailable in this deployment environment.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                    {response.escalate ? <ShieldAlert className="h-4.5 w-4.5 text-amber-600" /> : <Sparkles className="h-4.5 w-4.5 text-emerald-600" />}
+                    {response.escalate ? "Escalation created" : "AI answer"}
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-slate-700">
+                    {response.answer ?? response.message ?? "Your query has been escalated to HR. You will receive a response shortly."}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-500">
+                    <EnterpriseBadge tone="info">Confidence: {(response.confidence * 100).toFixed(0)}%</EnterpriseBadge>
+                    <EnterpriseBadge tone={response.escalate ? "warning" : "success"}>Escalation: {response.escalate ? "yes" : "no"}</EnterpriseBadge>
+                  </div>
+                </>
+              )}
             </EnterpriseCard>
           ) : null}
         </EnterpriseCard>
@@ -181,8 +195,18 @@ export default function EmployeeKnowledgeBaseView() {
                   <Checkbox checked={historySelection.selectedSet.has(entry.queryId)} onChange={() => historySelection.toggleOne(entry.queryId)} aria-label={`Select chat ${entry.queryId}`} />
                   <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-slate-900">{entry.queryText}</p>
-                  <p className="mt-1 text-xs text-slate-500">Confidence: {(Number(entry.confidenceScore ?? 0) * 100).toFixed(0)}%</p>
-                  <p className="mt-2 text-sm text-slate-600">{entry.escalationFlag ? "Escalated for HR review." : entry.responseDelivered}</p>
+                  {(entry.responseDelivered === "AI service is currently unavailable in this deployment environment." || entry.responseDelivered === "AI service is currently unavailable.") ? (
+                    <p className="mt-1 text-xs text-amber-600 font-semibold">AI Assistant Unavailable</p>
+                  ) : (
+                    <p className="mt-1 text-xs text-slate-500">Confidence: {(Number(entry.confidenceScore ?? 0) * 100).toFixed(0)}%</p>
+                  )}
+                  <p className="mt-2 text-sm text-slate-600">
+                    {entry.escalationFlag 
+                      ? "Escalated for HR review." 
+                      : (entry.responseDelivered === "AI service is currently unavailable in this deployment environment." || entry.responseDelivered === "AI service is currently unavailable.")
+                        ? "AI Assistant is currently unavailable in this deployment environment."
+                        : entry.responseDelivered}
+                  </p>
                   </div>
                   </div>
                 </div>

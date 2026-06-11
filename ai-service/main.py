@@ -52,16 +52,19 @@ def check_ollama_health() -> None:
 def startup() -> None:
     logging.basicConfig(level=logging.INFO)
     init_db()
-    warm_embedding_model()
-    validate_vector_configuration()
-    check_ollama_health()
-    logger.info(
-        "AI service started with embedding_model=%s vector_dimension=%s ollama_model=%s ollama_base_url=%s",
-        settings.embedding_model,
-        settings.vector_dimension,
-        settings.ollama_model,
-        settings.ollama_base_url,
-    )
+    if settings.ai_service_enabled:
+        warm_embedding_model()
+        validate_vector_configuration()
+        check_ollama_health()
+        logger.info(
+            "AI service started with embedding_model=%s vector_dimension=%s ollama_model=%s ollama_base_url=%s",
+            settings.embedding_model,
+            settings.vector_dimension,
+            settings.ollama_model,
+            settings.ollama_base_url,
+        )
+    else:
+        logger.info("AI Service Disabled - Running in Mock Mode")
 
 
 app.include_router(rag_router, prefix="/rag")

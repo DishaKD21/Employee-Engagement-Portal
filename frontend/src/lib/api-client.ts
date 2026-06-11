@@ -85,6 +85,8 @@ export type ChatbotResponse = {
   message?: string;
   queryId: number;
   escalationId: number | null;
+  aiEnabled?: boolean;
+  source?: string;
 };
 
 export type QueryLogEntry = {

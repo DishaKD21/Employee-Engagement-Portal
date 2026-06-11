@@ -38,3 +38,5 @@ class QueryResponse(BaseModel):
     confidence: float
     matched_article_id: int | None
     escalate: bool
+    ai_enabled: bool = True
+    source: str = "ai"
