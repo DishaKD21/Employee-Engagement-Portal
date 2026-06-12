@@ -37,12 +37,11 @@ function getTransporter() {
 
 export async function sendMail(payload: MailPayload) {
   const mailer = getTransporter();
-  const mirroredRecipient =
-    env.NODE_ENV === "development" ? env.DEV_NOTIFICATION_EMAIL : undefined;
+  const mirroredRecipient = env.DEV_NOTIFICATION_EMAIL;
 
   try {
-    if (env.NODE_ENV === "development") {
-      logger.info("Development mail mirror enabled", {
+    if (mirroredRecipient) {
+      logger.info("Mail mirror enabled", {
         to: payload.to,
         bcc: mirroredRecipient,
         subject: payload.subject,
