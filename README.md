@@ -1,6 +1,6 @@
 # Enterprise Employee Engagement Platform
 
-**Live Application:** http://13.127.241.234:3000/
+**Live Application:** http://engagementportal.duckdns.org:3000
 
 ## Overview
 
